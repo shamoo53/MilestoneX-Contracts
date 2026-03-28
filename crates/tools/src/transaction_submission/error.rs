@@ -187,25 +187,26 @@ impl SubmissionError {
     }
 
     /// Get the error code for categorization
-    pub fn error_code(&self) -> &'static str {
+    pub fn error_code(&self) -> String {
         match self {
-            SubmissionError::NetworkError { .. } => "network_error",
-            SubmissionError::Timeout { .. } => "tx_timeout",
-            SubmissionError::InsufficientBalance { .. } => "tx_insufficient_balance",
-            SubmissionError::InvalidSequence { .. } => "tx_bad_seq",
-            SubmissionError::TransactionFailed { result_code, .. } => result_code.as_str(),
-            SubmissionError::TransactionRejected { reason_code, .. } => reason_code.as_str(),
-            SubmissionError::DuplicateTransaction { .. } => "tx_duplicate",
-            SubmissionError::InvalidEnvelope { .. } => "tx_invalid_envelope",
-            SubmissionError::ServerError { .. } => "server_error",
-            SubmissionError::RateLimited { .. } => "rate_limited",
-            SubmissionError::TransactionTooLarge { .. } => "tx_too_large",
-            SubmissionError::FeeTooLow { .. } => "tx_fee_too_low",
-            SubmissionError::OperationNotSupported { .. } => "op_not_supported",
-            SubmissionError::InternalError { .. } => "internal_error",
-            SubmissionError::Cancelled { .. } => "cancelled",
-            SubmissionError::MaxRetriesExceeded { .. } => "max_retries_exceeded",
-            SubmissionError::Unknown { .. } => "unknown",
+            SubmissionError::NetworkError { .. } => "network_error".to_string(),
+            SubmissionError::Timeout { .. } => "tx_timeout".to_string(),
+            SubmissionError::InsufficientBalance { .. } => "tx_insufficient_balance".to_string(),
+            SubmissionError::InvalidSequence { .. } => "tx_bad_seq".to_string(),
+            SubmissionError::TransactionFailed { result_code, .. } => result_code.clone(),
+            SubmissionError::TransactionRejected { reason_code, .. } => reason_code.clone(),
+            SubmissionError::DuplicateTransaction { .. } => "tx_duplicate".to_string(),
+            SubmissionError::InvalidEnvelope { .. } => "tx_invalid_envelope".to_string(),
+            SubmissionError::ServerError { .. } => "server_error".to_string(),
+            SubmissionError::RateLimited { .. } => "rate_limited".to_string(),
+            SubmissionError::TransactionTooLarge { .. } => "tx_too_large".to_string(),
+            SubmissionError::FeeTooLow { .. } => "tx_fee_too_low".to_string(),
+            SubmissionError::OperationNotSupported { .. } => "op_not_supported".to_string(),
+            SubmissionError::InternalError { .. } => "internal_error".to_string(),
+            SubmissionError::Cancelled { .. } => "cancelled".to_string(),
+            SubmissionError::MaxRetriesExceeded { .. } => "max_retries_exceeded".to_string(),
+            SubmissionError::Unknown { .. } => "unknown".to_string(),
+            SubmissionError::InvalidResponse { .. } => "invalid_response".to_string(),
         }
     }
 
@@ -305,6 +306,9 @@ impl SubmissionError {
                 message: response_body.to_string(),
                 reason_code: "tx_malformed".to_string(),
             },
+            404 => SubmissionError::ServerError {
+                status: 404,
+                message: response_body.to_string(),
             404 => SubmissionError::Unknown {
                 message: "Transaction or endpoint not found (HTTP 404)".to_string(),
             },

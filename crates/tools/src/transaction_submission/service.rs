@@ -7,7 +7,6 @@ use super::logging::{SubmissionLog, SubmissionLogger, SubmissionTracker};
 use super::types::{
     SubmissionConfig, SubmissionRequest, SubmissionResponse, SubmissionStatus, TransactionResult,
 };
-use crate::horizon_error::HorizonError;
 use crate::horizon_retry::{calculate_backoff, RetryConfig, RetryPolicy};
 use log::{debug, error, info, warn};
 use reqwest::{Client, StatusCode};
@@ -118,7 +117,7 @@ impl TransactionSubmissionService {
         let response = match result {
             Ok(response) => response,
             Err(error) => {
-                let error_code = error.error_code().to_string();
+                let error_code = error.error_code();
                 let error_message = error.to_string();
                 SubmissionResponse::failed(&request_id, error_message, Some(error_code))
             }
