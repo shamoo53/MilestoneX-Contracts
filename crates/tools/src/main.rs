@@ -18,6 +18,8 @@ mod wallet_signing;
 
 use config::{Config, Network};
 use donation_tx_builder::{build_donation_transaction, BuildDonationTxRequest};
+use horizon_client::health::{HealthStatus, HorizonHealthChecker};
+use horizon_client::{HorizonClient, HorizonClientConfig};
 use transaction_submission::{
     SubmissionConfig, SubmissionLogger, SubmissionRequest, SubmissionResponse,
     TransactionSubmissionService,
@@ -236,11 +238,41 @@ fn main() -> Result<()> {
                         println!("✅ Configuration valid!");
                         println!("  Network: {}", cfg.network);
                         println!("  RPC URL: {}", cfg.rpc_url);
+                        println!("  Horizon URL: {}", cfg.horizon_url);
                         println!(
                             "  Admin Key: {}",
                             cfg.admin_key
                                 .map_or("Not set".to_string(), |_| "Configured".to_string())
                         );
+                        println!("Testing Horizon connectivity...");
+                        let hcfg = HorizonClientConfig {
+                            server_url: cfg.horizon_url.clone(),
+                            ..HorizonClientConfig::default()
+                        };
+                        let client = HorizonClient::with_config(hcfg)
+                            .map_err(|e| anyhow::anyhow!("Horizon client: {}", e))?;
+                        let rt = tokio::runtime::Runtime::new()?;
+                        let checker = HorizonHealthChecker::default_config();
+                        let result = rt.block_on(checker.check(&client));
+                        match result {
+                            Ok(r) if r.status == HealthStatus::Healthy || r.status == HealthStatus::Degraded => {
+                                println!(
+                                    "✅ Horizon reachable ({}, {} ms)",
+                                    r.status, r.response_time_ms
+                                );
+                            },
+                            Ok(r) => {
+                                eprintln!("❌ Horizon status: {}", r.status);
+                                if let Some(err) = r.error {
+                                    eprintln!("   {}", err);
+                                }
+                                std::process::exit(1);
+                            },
+                            Err(e) => {
+                                eprintln!("❌ Horizon check failed: {}", e);
+                                std::process::exit(1);
+                            },
+                        }
                     },
                     Err(e) => {
                         eprintln!("❌ Configuration error: {}", e);
@@ -257,6 +289,7 @@ fn main() -> Result<()> {
             Ok(cfg) => {
                 println!("Active network: {}", cfg.network);
                 println!("RPC URL: {}", cfg.rpc_url);
+                println!("Horizon URL: {}", cfg.horizon_url);
                 println!("Passphrase: {}", cfg.network_passphrase);
                 if let Some(key) = cfg.admin_key {
                     println!("Admin Key: {}", key);
@@ -815,11 +848,14 @@ fn initialize_config() -> Result<()> {
 
     // Create .env file with example values
     let env_content = r#"# StellarAid Configuration
-# Network: testnet, mainnet, or sandbox
+# Network: testnet, mainnet, or sandbox (selects a profile in soroban.toml)
 SOROBAN_NETWORK=testnet
 
 # RPC URL (optional - will use soroban.toml if not set)
 # SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+
+# Horizon REST URL for transaction submit / verify (optional - uses soroban.toml or network defaults)
+# SOROBAN_HORIZON_URL=https://horizon-testnet.stellar.org
 
 # Network passphrase (optional - will use soroban.toml if not set)
 # SOROBAN_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
@@ -857,19 +893,12 @@ fn submit_transaction(
 
     println!("🚀 Submitting transaction to {}...", network);
 
-    // Determine Horizon URL based on network
-    let horizon_url = match network {
-        "testnet" => "https://horizon-testnet.stellar.org",
-        "mainnet" => "https://horizon.stellar.org",
-        _ => {
-            eprintln!("❌ Unknown network: {}. Use 'testnet' or 'mainnet'", network);
-            std::process::exit(1);
-        }
-    };
+    let app_cfg =
+        Config::load_for_network(network).context("Failed to load configuration for network")?;
 
     // Build configuration
     let config = SubmissionConfig {
-        horizon_url: horizon_url.to_string(),
+        horizon_url: app_cfg.horizon_url.clone(),
         timeout: Duration::from_secs(timeout_seconds),
         max_retries: if no_retry { 0 } else { max_retries },
         log_path: Some(PathBuf::from(log_file)),
@@ -891,7 +920,7 @@ fn submit_transaction(
 
     // Display results
     match response.status {
-        super::transaction_submission::SubmissionStatus::Success => {
+        transaction_submission::SubmissionStatus::Success => {
             println!("✅ Transaction submitted successfully!");
             println!("   Transaction Hash: {}", response.transaction_hash.as_ref().unwrap());
             if let Some(ledger) = response.ledger_sequence {
@@ -899,7 +928,7 @@ fn submit_transaction(
             }
             println!("   Attempts: {}", response.attempts);
         }
-        super::transaction_submission::SubmissionStatus::Duplicate => {
+        transaction_submission::SubmissionStatus::Duplicate => {
             println!("⚠️  Transaction already submitted (duplicate)");
             println!("   Transaction Hash: {}", response.transaction_hash.as_ref().unwrap());
         }
@@ -928,15 +957,11 @@ fn verify_transaction(hash: &str, network: &str, timeout_seconds: u64) -> Result
     println!("Verifying transaction on {}...", network);
     println!("  Hash: {}", hash);
 
-    let config = match network {
-        "testnet" => VerificationConfig::testnet(),
-        "mainnet" => VerificationConfig::mainnet(),
-        _ => {
-            eprintln!("Unknown network: {}. Use 'testnet' or 'mainnet'", network);
-            std::process::exit(1);
-        }
-    }
-    .with_timeout(Duration::from_secs(timeout_seconds));
+    let app_cfg =
+        Config::load_for_network(network).context("Failed to load configuration for network")?;
+    let config = VerificationConfig::default()
+        .with_horizon_url(app_cfg.horizon_url.clone())
+        .with_timeout(Duration::from_secs(timeout_seconds));
 
     let service = TransactionVerificationService::with_config(config)
         .map_err(|e| anyhow::anyhow!("Failed to create verification service: {}", e))?;

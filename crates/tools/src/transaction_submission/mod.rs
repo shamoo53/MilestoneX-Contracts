@@ -15,5 +15,7 @@ pub mod types;
 
 pub use error::{SubmissionError, SubmissionResult};
 pub use logging::{SubmissionLog, SubmissionLogger};
-pub use service::{TransactionSubmissionService, SubmissionConfig};
-pub use types::{SubmissionRequest, SubmissionResponse, SubmissionStatus, TransactionResult};
+pub use service::TransactionSubmissionService;
+pub use types::{
+    SubmissionConfig, SubmissionRequest, SubmissionResponse, SubmissionStatus, TransactionResult,
+};

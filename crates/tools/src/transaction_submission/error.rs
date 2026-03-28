@@ -306,9 +306,6 @@ impl SubmissionError {
                 message: response_body.to_string(),
                 reason_code: "tx_malformed".to_string(),
             },
-            404 => SubmissionError::ServerError {
-                status: 404,
-                message: response_body.to_string(),
             404 => SubmissionError::Unknown {
                 message: "Transaction or endpoint not found (HTTP 404)".to_string(),
             },

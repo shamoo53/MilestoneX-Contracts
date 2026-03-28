@@ -3,7 +3,8 @@
 //! Implements rate limiting to respect Horizon API limits.
 //! Horizon public has a limit of 72 requests per hour (1.2 requests per minute).
 
-use governor::{Quota, RateLimiter};
+use governor::clock::{Clock, DefaultClock};
+use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
@@ -60,7 +61,7 @@ impl RateLimitConfig {
 /// Rate limiter for Horizon API requests
 pub struct HorizonRateLimiter {
     /// Governor rate limiter
-    limiter: Arc<RateLimiter>,
+    limiter: Arc<DefaultDirectRateLimiter>,
     /// Configuration
     config: RateLimitConfig,
 }
@@ -110,7 +111,9 @@ impl HorizonRateLimiter {
         match self.limiter.check() {
             Ok(()) => Ok(()),
             Err(negative) => {
-                Err(negative.wait_time_from(std::time::Instant::now()).as_secs() as u32)
+                Err(negative
+                    .wait_time_from(DefaultClock::default().now())
+                    .as_secs() as u32)
             },
         }
     }
@@ -124,7 +127,7 @@ impl HorizonRateLimiter {
     pub fn time_until_ready(&self) -> Option<Duration> {
         match self.limiter.check() {
             Ok(()) => Some(Duration::from_secs(0)),
-            Err(negative) => Some(negative.wait_time_from(std::time::Instant::now())),
+            Err(negative) => Some(negative.wait_time_from(DefaultClock::default().now())),
         }
     }
 
