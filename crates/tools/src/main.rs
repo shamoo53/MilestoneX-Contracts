@@ -12,12 +12,18 @@ mod horizon_client;
 mod horizon_error;
 mod horizon_rate_limit;
 mod horizon_retry;
+mod soroban_tx_builder;
 mod transaction_submission;
 mod transaction_verification;
 mod wallet_signing;
 
 use config::{Config, Network};
 use donation_tx_builder::{build_donation_transaction, BuildDonationTxRequest};
+use soroban_tx_builder::{
+    build_soroban_invoke_transaction, json_to_sc_vals, BuildSorobanInvokeRequest,
+};
+use horizon_client::health::{HealthStatus, HorizonHealthChecker};
+use horizon_client::{HorizonClient, HorizonClientConfig};
 use transaction_submission::{
     SubmissionConfig, SubmissionLogger, SubmissionRequest, SubmissionResponse,
     TransactionSubmissionService,
@@ -108,6 +114,36 @@ enum Commands {
         /// Explicit network passphrase (defaults to config value)
         #[arg(long)]
         network_passphrase: Option<String>,
+    },
+    /// Build an unsigned Soroban contract-invoke transaction (base64 XDR) for signing
+    BuildInvokeTx {
+        /// Source account public key (G…)
+        #[arg(long)]
+        source: String,
+        /// Current account sequence (sequence number to use for this tx)
+        #[arg(long)]
+        sequence: String,
+        /// Contract id (C…)
+        #[arg(long)]
+        contract: String,
+        /// Contract function / method name (Soroban symbol)
+        #[arg(long)]
+        function: String,
+        /// JSON array of arguments (see soroban_tx_builder::json_to_sc_vals)
+        #[arg(long)]
+        args: Option<String>,
+        /// Transaction validity window (seconds from now); 0 = no time bound
+        #[arg(long, default_value_t = 300)]
+        timeout_seconds: i64,
+        /// Base fee in stroops per operation
+        #[arg(long, default_value_t = 100)]
+        base_fee: u32,
+        /// Network passphrase override (defaults to config)
+        #[arg(long)]
+        network_passphrase: Option<String>,
+        /// SorobanTransactionData XDR (base64) from RPC simulation — recommended for submission
+        #[arg(long)]
+        soroban_data_xdr: Option<String>,
     },
     /// Prepare a wallet-specific transaction signing request
     PrepareWalletSigning {
@@ -236,11 +272,41 @@ fn main() -> Result<()> {
                         println!("✅ Configuration valid!");
                         println!("  Network: {}", cfg.network);
                         println!("  RPC URL: {}", cfg.rpc_url);
+                        println!("  Horizon URL: {}", cfg.horizon_url);
                         println!(
                             "  Admin Key: {}",
                             cfg.admin_key
                                 .map_or("Not set".to_string(), |_| "Configured".to_string())
                         );
+                        println!("Testing Horizon connectivity...");
+                        let hcfg = HorizonClientConfig {
+                            server_url: cfg.horizon_url.clone(),
+                            ..HorizonClientConfig::default()
+                        };
+                        let client = HorizonClient::with_config(hcfg)
+                            .map_err(|e| anyhow::anyhow!("Horizon client: {}", e))?;
+                        let rt = tokio::runtime::Runtime::new()?;
+                        let checker = HorizonHealthChecker::default_config();
+                        let result = rt.block_on(checker.check(&client));
+                        match result {
+                            Ok(r) if r.status == HealthStatus::Healthy || r.status == HealthStatus::Degraded => {
+                                println!(
+                                    "✅ Horizon reachable ({}, {} ms)",
+                                    r.status, r.response_time_ms
+                                );
+                            },
+                            Ok(r) => {
+                                eprintln!("❌ Horizon status: {}", r.status);
+                                if let Some(err) = r.error {
+                                    eprintln!("   {}", err);
+                                }
+                                std::process::exit(1);
+                            },
+                            Err(e) => {
+                                eprintln!("❌ Horizon check failed: {}", e);
+                                std::process::exit(1);
+                            },
+                        }
                     },
                     Err(e) => {
                         eprintln!("❌ Configuration error: {}", e);
@@ -257,6 +323,7 @@ fn main() -> Result<()> {
             Ok(cfg) => {
                 println!("Active network: {}", cfg.network);
                 println!("RPC URL: {}", cfg.rpc_url);
+                println!("Horizon URL: {}", cfg.horizon_url);
                 println!("Passphrase: {}", cfg.network_passphrase);
                 if let Some(key) = cfg.admin_key {
                     println!("Admin Key: {}", key);
@@ -290,6 +357,29 @@ fn main() -> Result<()> {
                 timeout_seconds,
                 base_fee,
                 network_passphrase.as_deref(),
+            )?;
+        },
+        Commands::BuildInvokeTx {
+            source,
+            sequence,
+            contract,
+            function,
+            args,
+            timeout_seconds,
+            base_fee,
+            network_passphrase,
+            soroban_data_xdr,
+        } => {
+            build_invoke_tx(
+                &source,
+                &sequence,
+                &contract,
+                &function,
+                args.as_deref(),
+                timeout_seconds,
+                base_fee,
+                network_passphrase.as_deref(),
+                soroban_data_xdr.as_deref(),
             )?;
         },
         Commands::PrepareWalletSigning {
@@ -526,6 +616,62 @@ fn build_donation_tx(
         },
         Err(err) => {
             eprintln!("❌ Failed to build donation transaction: {}", err);
+            std::process::exit(1);
+        },
+    }
+}
+
+fn build_invoke_tx(
+    source: &str,
+    sequence: &str,
+    contract: &str,
+    function: &str,
+    args_json: Option<&str>,
+    timeout_seconds: i64,
+    base_fee: u32,
+    network_passphrase_override: Option<&str>,
+    soroban_data_xdr: Option<&str>,
+) -> Result<()> {
+    let network_passphrase = if let Some(passphrase) = network_passphrase_override {
+        passphrase.to_string()
+    } else {
+        Config::load(None)
+            .map(|cfg| cfg.network_passphrase)
+            .context(
+                "Failed to resolve network passphrase. Pass --network-passphrase or configure soroban.toml",
+            )?
+    };
+
+    let arg_vals: Vec<serde_json::Value> = match args_json {
+        None | Some("") => Vec::new(),
+        Some(raw) => serde_json::from_str(raw).context("Failed to parse --args as JSON array")?,
+    };
+    let sc_args = json_to_sc_vals(&arg_vals).map_err(|e| anyhow::anyhow!(e))?;
+
+    let request = BuildSorobanInvokeRequest {
+        source_account: source.to_string(),
+        sequence: sequence.to_string(),
+        contract_id: contract.to_string(),
+        function_name: function.to_string(),
+        args: sc_args,
+        network_passphrase,
+        timeout_seconds,
+        base_fee_stroops: base_fee,
+        soroban_data_xdr: soroban_data_xdr.map(String::from),
+    };
+
+    match build_soroban_invoke_transaction(request) {
+        Ok(result) => {
+            println!("✅ Soroban invoke transaction built (unsigned)");
+            println!("  Contract: {}", contract);
+            println!("  Function: {}", function);
+            println!("  Total fee (stroops): {}", result.fee_stroops);
+            println!("  Operations: {}", result.operation_count);
+            println!("  XDR (sign this envelope): {}", result.xdr);
+            Ok(())
+        },
+        Err(err) => {
+            eprintln!("❌ Failed to build Soroban invoke transaction: {}", err);
             std::process::exit(1);
         },
     }
@@ -815,11 +961,14 @@ fn initialize_config() -> Result<()> {
 
     // Create .env file with example values
     let env_content = r#"# StellarAid Configuration
-# Network: testnet, mainnet, or sandbox
+# Network: testnet, mainnet, or sandbox (selects a profile in soroban.toml)
 SOROBAN_NETWORK=testnet
 
 # RPC URL (optional - will use soroban.toml if not set)
 # SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+
+# Horizon REST URL for transaction submit / verify (optional - uses soroban.toml or network defaults)
+# SOROBAN_HORIZON_URL=https://horizon-testnet.stellar.org
 
 # Network passphrase (optional - will use soroban.toml if not set)
 # SOROBAN_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
@@ -857,19 +1006,12 @@ fn submit_transaction(
 
     println!("🚀 Submitting transaction to {}...", network);
 
-    // Determine Horizon URL based on network
-    let horizon_url = match network {
-        "testnet" => "https://horizon-testnet.stellar.org",
-        "mainnet" => "https://horizon.stellar.org",
-        _ => {
-            eprintln!("❌ Unknown network: {}. Use 'testnet' or 'mainnet'", network);
-            std::process::exit(1);
-        }
-    };
+    let app_cfg =
+        Config::load_for_network(network).context("Failed to load configuration for network")?;
 
     // Build configuration
     let config = SubmissionConfig {
-        horizon_url: horizon_url.to_string(),
+        horizon_url: app_cfg.horizon_url.clone(),
         timeout: Duration::from_secs(timeout_seconds),
         max_retries: if no_retry { 0 } else { max_retries },
         log_path: Some(PathBuf::from(log_file)),
@@ -891,7 +1033,7 @@ fn submit_transaction(
 
     // Display results
     match response.status {
-        super::transaction_submission::SubmissionStatus::Success => {
+        transaction_submission::SubmissionStatus::Success => {
             println!("✅ Transaction submitted successfully!");
             println!("   Transaction Hash: {}", response.transaction_hash.as_ref().unwrap());
             if let Some(ledger) = response.ledger_sequence {
@@ -899,7 +1041,7 @@ fn submit_transaction(
             }
             println!("   Attempts: {}", response.attempts);
         }
-        super::transaction_submission::SubmissionStatus::Duplicate => {
+        transaction_submission::SubmissionStatus::Duplicate => {
             println!("⚠️  Transaction already submitted (duplicate)");
             println!("   Transaction Hash: {}", response.transaction_hash.as_ref().unwrap());
         }
@@ -928,15 +1070,11 @@ fn verify_transaction(hash: &str, network: &str, timeout_seconds: u64) -> Result
     println!("Verifying transaction on {}...", network);
     println!("  Hash: {}", hash);
 
-    let config = match network {
-        "testnet" => VerificationConfig::testnet(),
-        "mainnet" => VerificationConfig::mainnet(),
-        _ => {
-            eprintln!("Unknown network: {}. Use 'testnet' or 'mainnet'", network);
-            std::process::exit(1);
-        }
-    }
-    .with_timeout(Duration::from_secs(timeout_seconds));
+    let app_cfg =
+        Config::load_for_network(network).context("Failed to load configuration for network")?;
+    let config = VerificationConfig::default()
+        .with_horizon_url(app_cfg.horizon_url.clone())
+        .with_timeout(Duration::from_secs(timeout_seconds));
 
     let service = TransactionVerificationService::with_config(config)
         .map_err(|e| anyhow::anyhow!("Failed to create verification service: {}", e))?;

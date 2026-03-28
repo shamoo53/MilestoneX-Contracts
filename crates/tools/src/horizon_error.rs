@@ -3,6 +3,7 @@
 //! Comprehensive error types for Horizon client operations.
 
 use std::time::Duration;
+use reqwest::StatusCode;
 use thiserror::Error;
 
 /// Errors that can occur during Horizon API interactions
@@ -157,12 +158,10 @@ impl HorizonError {
             HorizonError::NetworkError(err.to_string())
         } else if let Some(status) = err.status() {
             match status {
-                reqwest::http::StatusCode::NOT_FOUND => HorizonError::NotFound(err.to_string()),
-                reqwest::http::StatusCode::BAD_REQUEST => HorizonError::BadRequest(err.to_string()),
-                reqwest::http::StatusCode::UNAUTHORIZED => {
-                    HorizonError::Unauthorized(err.to_string())
-                },
-                reqwest::http::StatusCode::FORBIDDEN => HorizonError::Forbidden(err.to_string()),
+                StatusCode::NOT_FOUND => HorizonError::NotFound(err.to_string()),
+                StatusCode::BAD_REQUEST => HorizonError::BadRequest(err.to_string()),
+                StatusCode::UNAUTHORIZED => HorizonError::Unauthorized(err.to_string()),
+                StatusCode::FORBIDDEN => HorizonError::Forbidden(err.to_string()),
                 _ if status.is_server_error() => HorizonError::ServerError {
                     status: status.as_u16(),
                     message: err.to_string(),

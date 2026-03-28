@@ -5,7 +5,7 @@ use crate::horizon_rate_limit::{HorizonRateLimiter, RateLimitConfig};
 use crate::horizon_retry::{RetryConfig, RetryPolicy};
 use chrono::{DateTime, Utc};
 use log::{debug, error, info, warn};
-use reqwest::{Client, ClientBuilder, StatusCode, Timeout};
+use reqwest::{Client, ClientBuilder, StatusCode};
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
@@ -127,7 +127,7 @@ impl HorizonClient {
     /// Create a new Horizon client with custom configuration
     pub fn with_config(config: HorizonClientConfig) -> HorizonResult<Self> {
         let http_client = ClientBuilder::new()
-            .timeout(Timeout::from_secs(config.timeout.as_secs()))
+            .timeout(config.timeout)
             .user_agent("stellaraid-client/1.0")
             .build()
             .map_err(|e| HorizonError::InvalidConfig(e.to_string()))?;
@@ -287,8 +287,6 @@ impl HorizonClient {
     where
         F: FnMut() -> futures::future::BoxFuture<'static, HorizonResult<T>>,
     {
-        let mut errors = Vec::new();
-
         for attempt in 1..=self.config.retry_config.max_attempts {
             let mut ctx = context.clone();
             ctx.attempt = attempt;
@@ -296,8 +294,6 @@ impl HorizonClient {
             match f().await {
                 Ok(result) => return Ok(result),
                 Err(error) => {
-                    errors.push(error.clone());
-
                     // Check retry policy
                     if !self.config.retry_policy.should_retry(&error) {
                         error!(
@@ -334,9 +330,9 @@ impl HorizonClient {
             }
         }
 
-        Err(errors
-            .pop()
-            .unwrap_or_else(|| HorizonError::Other("Unknown retry error".to_string())))
+        Err(HorizonError::Other(
+            "Retry loop exhausted without returning".to_string(),
+        ))
     }
 
     /// Clear the response cache

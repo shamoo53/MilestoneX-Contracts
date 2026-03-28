@@ -30,6 +30,8 @@ impl fmt::Display for Network {
 struct ProfileFile {
     network: String,
     rpc_url: String,
+    #[serde(default)]
+    horizon_url: Option<String>,
     network_passphrase: String,
 }
 
@@ -49,6 +51,8 @@ pub struct Config {
     pub network: Network,
     /// Resolved RPC URL.
     pub rpc_url: String,
+    /// Horizon REST API base URL for classic layer queries and tx submit.
+    pub horizon_url: String,
     /// Resolved network passphrase.
     pub network_passphrase: String,
     /// Admin key for contract deployment (from environment or generated).
@@ -68,6 +72,10 @@ pub enum ConfigError {
     ProfileNotFound(String),
     #[error("Missing required value: {0}")]
     MissingValue(&'static str),
+    #[error(
+        "No Horizon URL for network '{0}'. Set horizon_url in soroban.toml for this profile or set SOROBAN_HORIZON_URL"
+    )]
+    MissingHorizon(String),
 }
 
 impl Config {
@@ -94,6 +102,7 @@ impl Config {
         // Read env overrides (may be unset)
         let env_network = env::var("SOROBAN_NETWORK").ok();
         let env_rpc = env::var("SOROBAN_RPC_URL").ok();
+        let env_horizon = env::var("SOROBAN_HORIZON_URL").ok();
         let env_pass = env::var("SOROBAN_NETWORK_PASSPHRASE").ok();
         let env_admin_key = env::var("SOROBAN_ADMIN_KEY").ok();
 
@@ -118,6 +127,13 @@ impl Config {
 
         // base values from profile
         let mut rpc_url = profile.rpc_url.clone();
+        let mut horizon_url = profile
+            .horizon_url
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .or_else(|| default_horizon_url(&profile.network).map(String::from));
         let mut network_passphrase = profile.network_passphrase.clone();
         let network_str = profile.network.clone();
 
@@ -125,16 +141,31 @@ impl Config {
         if let Some(e) = env_rpc {
             rpc_url = e;
         }
+        if let Some(e) = env_horizon {
+            if !e.trim().is_empty() {
+                horizon_url = Some(e);
+            }
+        }
         if let Some(e) = env_pass {
             network_passphrase = e;
         }
 
         // derive Network enum (prefer env_network string if provided)
-        let network_enum = match env_network.as_deref().unwrap_or(&network_str) {
+        let network_key = env_network.as_deref().unwrap_or(&network_str);
+        let network_enum = match network_key {
             "testnet" => Network::Testnet,
             "mainnet" => Network::Mainnet,
             "sandbox" => Network::Sandbox,
             other => Network::Custom(other.to_string()),
+        };
+
+        // Horizon defaults use the profile's Stellar `network` field (not the profile table key),
+        // so a custom profile name still resolves to the correct Horizon for `network = "mainnet"`.
+        let horizon_url = match horizon_url {
+            Some(h) if !h.trim().is_empty() => h,
+            _ => default_horizon_url(network_str.as_str())
+                .map(String::from)
+                .ok_or_else(|| ConfigError::MissingHorizon(network_str.clone()))?,
         };
 
         // ensure required values present
@@ -149,9 +180,27 @@ impl Config {
             profile: profile_name,
             network: network_enum,
             rpc_url,
+            horizon_url,
             network_passphrase,
             admin_key: env_admin_key,
         })
+    }
+
+    /// Reload config after setting `SOROBAN_NETWORK` (used by CLI `--network` flags).
+    pub fn load_for_network(network: &str) -> Result<Self, ConfigError> {
+        env::set_var("SOROBAN_NETWORK", network);
+        Self::load(None)
+    }
+}
+
+/// Known Stellar Horizon endpoints when not overridden in `soroban.toml`.
+fn default_horizon_url(network: &str) -> Option<&'static str> {
+    match network {
+        "testnet" => Some("https://horizon-testnet.stellar.org"),
+        "mainnet" => Some("https://horizon.stellar.org"),
+        "sandbox" => Some("http://localhost:8000"),
+        "futurenet" => Some("https://horizon-futurenet.stellar.org"),
+        _ => None,
     }
 }
 
@@ -190,6 +239,7 @@ mod tests {
     fn clear_env_vars() {
         env::remove_var("SOROBAN_NETWORK");
         env::remove_var("SOROBAN_RPC_URL");
+        env::remove_var("SOROBAN_HORIZON_URL");
         env::remove_var("SOROBAN_NETWORK_PASSPHRASE");
     }
 
@@ -221,6 +271,10 @@ network_passphrase = "Test SDF Network ; September 2015"
             let cfg = Config::load(Some(&p)).expect("should load");
             assert_eq!(cfg.profile, "testnet");
             assert_eq!(cfg.rpc_url, "https://soroban-testnet.stellar.org");
+            assert_eq!(
+                cfg.horizon_url,
+                "https://horizon-testnet.stellar.org"
+            );
             assert_eq!(cfg.network_passphrase, "Test SDF Network ; September 2015");
             match cfg.network {
                 Network::Testnet => {},
@@ -247,6 +301,65 @@ network_passphrase = "Test SDF Network ; September 2015"
             let cfg = Config::load(Some(&p)).expect("should load with overrides");
             assert_eq!(cfg.rpc_url, "https://override.local");
             assert_eq!(cfg.network_passphrase, "override pass");
+        });
+    }
+
+    #[test]
+    fn env_overrides_horizon_url() {
+        with_isolated_env(|| {
+            let d = tempdir().unwrap();
+            let toml = r#"
+[profile.testnet]
+network = "testnet"
+rpc_url = "https://soroban-testnet.stellar.org"
+network_passphrase = "Test SDF Network ; September 2015"
+"#;
+            let p = write_toml(d.path(), toml);
+            env::set_var("SOROBAN_NETWORK", "testnet");
+            env::set_var("SOROBAN_HORIZON_URL", "https://horizon-custom.example");
+
+            let cfg = Config::load(Some(&p)).expect("should load");
+            assert_eq!(cfg.horizon_url, "https://horizon-custom.example");
+        });
+    }
+
+    #[test]
+    fn unknown_network_requires_horizon_in_profile_or_env() {
+        with_isolated_env(|| {
+            let d = tempdir().unwrap();
+            let toml = r#"
+[profile.edge]
+network = "edge-private"
+rpc_url = "https://rpc.edge.example"
+network_passphrase = "pass"
+"#;
+            let p = write_toml(d.path(), toml);
+            env::set_var("SOROBAN_NETWORK", "edge");
+
+            let err = Config::load(Some(&p)).expect_err("missing horizon mapping");
+            match err {
+                ConfigError::MissingHorizon(n) => assert_eq!(n, "edge-private"),
+                e => panic!("unexpected error: {:?}", e),
+            }
+        });
+    }
+
+    #[test]
+    fn unknown_network_loads_when_horizon_set_in_toml() {
+        with_isolated_env(|| {
+            let d = tempdir().unwrap();
+            let toml = r#"
+[profile.edge]
+network = "edge-private"
+rpc_url = "https://rpc.edge.example"
+horizon_url = "https://horizon.edge.example"
+network_passphrase = "pass"
+"#;
+            let p = write_toml(d.path(), toml);
+            env::set_var("SOROBAN_NETWORK", "edge");
+
+            let cfg = Config::load(Some(&p)).expect("should load");
+            assert_eq!(cfg.horizon_url, "https://horizon.edge.example");
         });
     }
 
@@ -286,6 +399,7 @@ network_passphrase = "Standalone Network ; February 2017"
             let cfg = Config::load(Some(&p)).expect("should load sandbox");
             assert_eq!(cfg.profile, "sandbox");
             assert_eq!(cfg.rpc_url, "http://localhost:8000");
+            assert_eq!(cfg.horizon_url, "http://localhost:8000");
         });
     }
 }

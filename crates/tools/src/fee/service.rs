@@ -55,6 +55,9 @@ pub struct FeeEstimationService {
 impl FeeEstimationService {
     /// Create new fee estimation service
     pub fn new(config: FeeServiceConfig) -> Self {
+        let cache_ttl_secs = config.cache_ttl_secs;
+        let max_history_records = config.max_history_records;
+
         let horizon_fetcher = HorizonFeeFetcher::new(config.horizon_url.clone())
             .with_timeout(config.fetch_timeout_secs);
 
@@ -65,8 +68,8 @@ impl FeeEstimationService {
             config,
             fee_config: FeeConfig::default(),
             horizon_fetcher,
-            cache: Arc::new(RwLock::new(FeeCache::new(config.cache_ttl_secs))),
-            history: Arc::new(RwLock::new(FeeHistory::new(config.max_history_records))),
+            cache: Arc::new(RwLock::new(FeeCache::new(cache_ttl_secs))),
+            history: Arc::new(RwLock::new(FeeHistory::new(max_history_records))),
             surge_analyzer: Arc::new(RwLock::new(surge_analyzer)),
             converter: Arc::new(RwLock::new(CurrencyConverter::new())),
         }
@@ -91,7 +94,7 @@ impl FeeEstimationService {
         let base_fee = self.fetch_and_cache_fee().await?;
 
         // Check for surge pricing
-        let surge_analyzer = self.surge_analyzer.write().await;
+        let mut surge_analyzer = self.surge_analyzer.write().await;
         let analysis = surge_analyzer.analyze(base_fee)?;
 
         info!(
@@ -222,7 +225,7 @@ impl FeeEstimationService {
     /// Get surge pricing information
     pub async fn get_surge_info(&self) -> Option<String> {
         let base_fee = self.get_cached_fee().await?;
-        let analyzer = self.surge_analyzer.read().await;
+        let mut analyzer = self.surge_analyzer.write().await;
         let analysis = analyzer.analyze(base_fee).ok()?;
 
         Some(format!(

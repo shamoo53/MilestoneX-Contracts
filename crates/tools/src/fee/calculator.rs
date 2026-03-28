@@ -250,6 +250,8 @@ mod tests {
     fn test_fee_info_exceeds_threshold() {
         let fee_info = FeeInfo::new(100, 10, false, 100.0).unwrap();
         assert!(!fee_info.exceeds_threshold(0.001)); // 0.001 XLM threshold
-        assert!(fee_info.exceeds_threshold(0.0001)); // exceeds threshold
+        // total_fee_xlm == 0.0001; threshold uses strict `>`
+        assert!(!fee_info.exceeds_threshold(0.0001));
+        assert!(fee_info.exceeds_threshold(0.00005));
     }
 }
