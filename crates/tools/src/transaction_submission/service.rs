@@ -340,6 +340,16 @@ impl TransactionSubmissionService {
         // Parse the error using the error module
         let error = SubmissionError::from_horizon_response(status, response_body);
 
+        let error_code = error.error_code();
+        let human_message = error.user_message();
+        error!(
+            "[{}] Horizon error mapped as {}: {} | raw: {:?}",
+            request.request_id,
+            error_code,
+            human_message,
+            error
+        );
+
         // Check for specific error types
         match &error {
             SubmissionError::DuplicateTransaction { transaction_hash, .. } => {
