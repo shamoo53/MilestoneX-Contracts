@@ -46,6 +46,32 @@ pub struct DonationRejected {
     pub timestamp: u64,
 }
 
+/// Event emitted when a campaign is created
+#[derive(Clone)]
+pub struct CampaignCreated {
+    pub project_id: String,
+    pub beneficiary: Address,
+    pub goal_amount: i128,
+    pub goal_asset: String,
+    pub timestamp: u64,
+}
+
+/// Event emitted when campaign metadata is updated
+#[derive(Clone)]
+pub struct CampaignUpdated {
+    pub project_id: String,
+    pub timestamp: u64,
+}
+
+/// Event emitted when campaign status changes
+#[derive(Clone)]
+pub struct CampaignStatusChanged {
+    pub project_id: String,
+    pub previous_status: u32,
+    pub new_status: u32,
+    pub timestamp: u64,
+}
+
 impl DonationReceived {
     /// Emit the DonationReceived event to the ledger
     /// 
@@ -105,6 +131,44 @@ impl DonationRejected {
     }
 }
 
+impl CampaignCreated {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_created")),
+            (
+                self.project_id.clone(),
+                self.beneficiary.clone(),
+                self.goal_amount,
+                self.goal_asset.clone(),
+                self.timestamp,
+            ),
+        );
+    }
+}
+
+impl CampaignUpdated {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_updated")),
+            (self.project_id.clone(), self.timestamp),
+        );
+    }
+}
+
+impl CampaignStatusChanged {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_status_changed")),
+            (
+                self.project_id.clone(),
+                self.previous_status,
+                self.new_status,
+                self.timestamp,
+            ),
+        );
+    }
+}
+
 /// Event type identifier for DonationReceived
 /// Used by indexers to identify this event type
 pub const EVENT_DONATION_RECEIVED: &[u8] = b"donation_received";
@@ -116,3 +180,12 @@ pub const EVENT_WITHDRAWAL_PROCESSED: &[u8] = b"withdrawal_processed";
 /// Event type identifier for DonationRejected
 /// Used by indexers to identify this event type
 pub const EVENT_DONATION_REJECTED: &[u8] = b"donation_rejected";
+
+/// Event type identifier for CampaignCreated
+pub const EVENT_CAMPAIGN_CREATED: &[u8] = b"campaign_created";
+
+/// Event type identifier for CampaignUpdated
+pub const EVENT_CAMPAIGN_UPDATED: &[u8] = b"campaign_updated";
+
+/// Event type identifier for CampaignStatusChanged
+pub const EVENT_CAMPAIGN_STATUS_CHANGED: &[u8] = b"campaign_status_changed";

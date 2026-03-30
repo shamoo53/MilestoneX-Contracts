@@ -5,6 +5,7 @@ pub mod assets;
 pub mod validation;
 pub mod events;
 pub mod donation;
+pub mod campaign;
 pub mod storage_optimized;
 pub mod donation_optimized;
 pub mod storage_tests;
@@ -15,6 +16,16 @@ pub struct CoreContract;
 
 #[contractimpl]
 impl CoreContract {
+    fn campaign_status_code(status: campaign::CampaignStatus) -> u32 {
+        match status {
+            campaign::CampaignStatus::Pending => 0,
+            campaign::CampaignStatus::Active => 1,
+            campaign::CampaignStatus::Completed => 2,
+            campaign::CampaignStatus::Cancelled => 3,
+            campaign::CampaignStatus::Expired => 4,
+        }
+    }
+
     pub fn init(env: Env, admin: Address) {
         // Initialize global admin
         rbac::Rbac::set_admin(&env, &admin);
@@ -36,13 +47,15 @@ impl CoreContract {
         project_id: String,
         tx_hash: String,
     ) -> i128 {
+        let timestamp = env.ledger().timestamp();
+
         // Check for duplicate transaction
         if donation::is_transaction_processed(&env, &tx_hash) {
             // Emit rejection event for duplicate
             events::DonationRejected {
                 tx_hash: tx_hash.clone(),
                 reason: String::from_str(&env, "Duplicate transaction hash"),
-                timestamp: env.ledger().timestamp(),
+                timestamp,
             }
             .emit(&env);
             return 0;
@@ -54,8 +67,30 @@ impl CoreContract {
             Err(_) => return 0,
         }
 
-        // Get timestamp from ledger
-        let timestamp = env.ledger().timestamp();
+        // Enforce campaign state machine before accepting donations
+        let pre_status = campaign::CampaignManager::get_campaign(&env, &project_id).map(|c| c.status);
+        if let Err(reason) = campaign::CampaignManager::validate_donation_allowed(&env, &project_id, timestamp) {
+            events::DonationRejected {
+                tx_hash: tx_hash.clone(),
+                reason: String::from_str(&env, reason),
+                timestamp,
+            }
+            .emit(&env);
+            return 0;
+        }
+
+        let validated_status = campaign::CampaignManager::get_campaign(&env, &project_id).map(|c| c.status);
+        if let (Some(before), Some(after)) = (pre_status, validated_status) {
+            if before != after {
+                events::CampaignStatusChanged {
+                    project_id: project_id.clone(),
+                    previous_status: Self::campaign_status_code(before),
+                    new_status: Self::campaign_status_code(after),
+                    timestamp,
+                }
+                .emit(&env);
+            }
+        }
 
         // Mark transaction as processed BEFORE storing (prevents reentrancy)
         donation::mark_transaction_processed(&env, &tx_hash);
@@ -74,6 +109,21 @@ impl CoreContract {
         let index = donation::increment_donation_count(&env, &project_id) - 1;
         donation.store(&env, &project_id, index);
 
+        let status_before_progress = campaign::CampaignManager::get_campaign(&env, &project_id).map(|c| c.status);
+        campaign::CampaignManager::record_donation(&env, &project_id, &donor, amount);
+        let status_after_progress = campaign::CampaignManager::get_campaign(&env, &project_id).map(|c| c.status);
+        if let (Some(before), Some(after)) = (status_before_progress, status_after_progress) {
+            if before != after {
+                events::CampaignStatusChanged {
+                    project_id: project_id.clone(),
+                    previous_status: Self::campaign_status_code(before),
+                    new_status: Self::campaign_status_code(after),
+                    timestamp,
+                }
+                .emit(&env);
+            }
+        }
+
         // Emit the DonationReceived event with project_id
         events::DonationReceived {
             donor: donor.clone(),
@@ -90,6 +140,138 @@ impl CoreContract {
     /// Get all donations for a project
     pub fn get_donations(env: Env, project_id: String) -> soroban_sdk::Vec<Donation> {
         donation::get_donations_by_project(&env, &project_id)
+    }
+
+    // ===== Campaign Management Functions =====
+
+    pub fn create_campaign(
+        env: Env,
+        caller: Address,
+        project_id: String,
+        title: String,
+        description: String,
+        beneficiary: Address,
+        goal_amount: i128,
+        goal_asset: String,
+        start_timestamp: u64,
+        end_timestamp: u64,
+        category: String,
+        tags: soroban_sdk::Vec<String>,
+    ) -> Result<String, String> {
+        let campaign = campaign::CampaignManager::create_campaign(
+            &env,
+            &caller,
+            project_id.clone(),
+            title,
+            description,
+            beneficiary.clone(),
+            goal_amount,
+            goal_asset.clone(),
+            start_timestamp,
+            end_timestamp,
+            category,
+            tags,
+        )
+        .map_err(|e| String::from_str(&env, e))?;
+
+        events::CampaignCreated {
+            project_id: campaign.project_id.clone(),
+            beneficiary,
+            goal_amount,
+            goal_asset,
+            timestamp: env.ledger().timestamp(),
+        }
+        .emit(&env);
+
+        Ok(project_id)
+    }
+
+    pub fn get_campaign(env: Env, project_id: String) -> Option<campaign::Campaign> {
+        campaign::CampaignManager::get_campaign(&env, &project_id)
+    }
+
+    pub fn update_campaign(
+        env: Env,
+        caller: Address,
+        project_id: String,
+        title: String,
+        description: String,
+        beneficiary: Address,
+        category: String,
+        tags: soroban_sdk::Vec<String>,
+    ) -> Result<String, String> {
+        campaign::CampaignManager::update_campaign(
+            &env,
+            &caller,
+            project_id.clone(),
+            title,
+            description,
+            beneficiary,
+            category,
+            tags,
+        )
+        .map_err(|e| String::from_str(&env, e))?;
+
+        events::CampaignUpdated {
+            project_id: project_id.clone(),
+            timestamp: env.ledger().timestamp(),
+        }
+        .emit(&env);
+
+        Ok(project_id)
+    }
+
+    pub fn complete_campaign(
+        env: Env,
+        caller: Address,
+        project_id: String,
+    ) -> Result<String, String> {
+        let current = campaign::CampaignManager::get_campaign(&env, &project_id)
+            .ok_or_else(|| String::from_str(&env, "Campaign not found"))?;
+        let updated = campaign::CampaignManager::complete_campaign(&env, &caller, project_id.clone())
+            .map_err(|e| String::from_str(&env, e))?;
+
+        events::CampaignStatusChanged {
+            project_id: project_id.clone(),
+            previous_status: Self::campaign_status_code(current.status),
+            new_status: Self::campaign_status_code(updated.status),
+            timestamp: env.ledger().timestamp(),
+        }
+        .emit(&env);
+
+        Ok(project_id)
+    }
+
+    pub fn cancel_campaign(
+        env: Env,
+        caller: Address,
+        project_id: String,
+    ) -> Result<String, String> {
+        let current = campaign::CampaignManager::get_campaign(&env, &project_id)
+            .ok_or_else(|| String::from_str(&env, "Campaign not found"))?;
+        let updated = campaign::CampaignManager::cancel_campaign(&env, &caller, project_id.clone())
+            .map_err(|e| String::from_str(&env, e))?;
+
+        events::CampaignStatusChanged {
+            project_id: project_id.clone(),
+            previous_status: Self::campaign_status_code(current.status),
+            new_status: Self::campaign_status_code(updated.status),
+            timestamp: env.ledger().timestamp(),
+        }
+        .emit(&env);
+
+        Ok(project_id)
+    }
+
+    pub fn list_campaigns(
+        env: Env,
+        filter: campaign::CampaignListFilter,
+    ) -> soroban_sdk::Vec<campaign::Campaign> {
+        campaign::CampaignManager::list_campaigns(&env, filter)
+    }
+
+    pub fn get_campaign_stats(env: Env, project_id: String) -> Option<campaign::CampaignStats> {
+        campaign::CampaignManager::get_campaign_stats(&env, &project_id)
     }
 
     // ===== Asset Management Functions (Admin Only) =====
@@ -189,8 +371,33 @@ pub use donation::Donation;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::vec;
     use soroban_sdk::testutils::Address as _;
     use soroban_sdk::Env;
+
+    fn create_test_campaign(
+        env: &Env,
+        client: &CoreContractClient,
+        admin: &Address,
+        project_id: &String,
+    ) {
+        let beneficiary = Address::generate(env);
+        let tags = vec![env, String::from_str(env, "aid")];
+        let result = client.create_campaign(
+            admin,
+            project_id,
+            &String::from_str(env, "Campaign title"),
+            &String::from_str(env, "Campaign description"),
+            &beneficiary,
+            &5_000i128,
+            &String::from_str(env, "XLM"),
+            &10u64,
+            &9_999u64,
+            &String::from_str(env, "general"),
+            &tags,
+        );
+        assert!(result.is_ok());
+    }
 
     #[test]
     fn test_init_and_ping() {
@@ -232,6 +439,7 @@ mod tests {
     #[test]
     fn test_donate_with_valid_project_id() {
         let env = Env::default();
+        env.mock_all_auths();
         let contract_id = env.register_contract(None, CoreContract);
         let client = CoreContractClient::new(&env, &contract_id);
 
@@ -244,6 +452,8 @@ mod tests {
         let project_id = String::from_str(&env, "proj-123");
         let tx_hash = String::from_str(&env, "abc123");
 
+        create_test_campaign(&env, &client, &admin, &project_id);
+
         let result = client.donate(&donor, &amount, &asset, &project_id, &tx_hash);
         assert_eq!(result, amount);
     }
@@ -251,6 +461,7 @@ mod tests {
     #[test]
     fn test_donate_with_invalid_project_id_empty() {
         let env = Env::default();
+        env.mock_all_auths();
         let contract_id = env.register_contract(None, CoreContract);
         let client = CoreContractClient::new(&env, &contract_id);
 
@@ -271,6 +482,7 @@ mod tests {
     #[test]
     fn test_get_donations_groups_by_project_id() {
         let env = Env::default();
+        env.mock_all_auths();
         let contract_id = env.register_contract(None, CoreContract);
         let client = CoreContractClient::new(&env, &contract_id);
 
@@ -283,11 +495,13 @@ mod tests {
 
         // Donate to project A
         let project_a = String::from_str(&env, "project-alpha");
+        create_test_campaign(&env, &client, &admin, &project_a);
         client.donate(&donor1, &1000i128, &String::from_str(&env, "XLM"), &project_a, &String::from_str(&env, "tx1"));
         client.donate(&donor2, &2000i128, &String::from_str(&env, "USDC"), &project_a, &String::from_str(&env, "tx2"));
 
         // Donate to project B
         let project_b = String::from_str(&env, "project-beta");
+        create_test_campaign(&env, &client, &admin, &project_b);
         client.donate(&donor3, &500i128, &String::from_str(&env, "XLM"), &project_b, &String::from_str(&env, "tx3"));
 
         // Get donations for project A
@@ -302,6 +516,7 @@ mod tests {
     #[test]
     fn test_duplicate_transaction_rejected() {
         let env = Env::default();
+        env.mock_all_auths();
         let contract_id = env.register_contract(None, CoreContract);
         let client = CoreContractClient::new(&env, &contract_id);
 
@@ -311,6 +526,8 @@ mod tests {
         let donor = Address::generate(&env);
         let project_id = String::from_str(&env, "test-project");
         let tx_hash = String::from_str(&env, "unique-tx-hash-123");
+
+        create_test_campaign(&env, &client, &admin, &project_id);
 
         // First donation should succeed
         let result1 = client.donate(&donor, &1000i128, &String::from_str(&env, "XLM"), &project_id, &tx_hash);
