@@ -102,38 +102,43 @@ impl AssetResolver {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::Env;
 
     #[test]
     fn test_resolve_by_code() {
-        let xlm = AssetResolver::resolve_by_code("XLM");
+        let env = Env::default();
+        let xlm = AssetResolver::resolve_by_code(&env, "XLM");
         assert!(xlm.is_some());
         assert!(xlm.unwrap().is_xlm());
 
-        let usdc = AssetResolver::resolve_by_code("USDC");
+        let usdc = AssetResolver::resolve_by_code(&env, "USDC");
         assert!(usdc.is_some());
 
-        let invalid = AssetResolver::resolve_by_code("INVALID");
+        let invalid = AssetResolver::resolve_by_code(&env, "INVALID");
         assert!(invalid.is_none());
     }
 
     #[test]
     fn test_is_supported() {
-        assert!(AssetResolver::is_supported("XLM"));
-        assert!(AssetResolver::is_supported("USDC"));
-        assert!(AssetResolver::is_supported("NGNT"));
-        assert!(AssetResolver::is_supported("USDT"));
-        assert!(AssetResolver::is_supported("EURT"));
-        assert!(!AssetResolver::is_supported("INVALID"));
+        let env = Env::default();
+        assert!(AssetResolver::is_supported(&env, "XLM"));
+        assert!(AssetResolver::is_supported(&env, "USDC"));
+        assert!(AssetResolver::is_supported(&env, "NGNT"));
+        assert!(AssetResolver::is_supported(&env, "USDT"));
+        assert!(AssetResolver::is_supported(&env, "EURT"));
+        assert!(!AssetResolver::is_supported(&env, "INVALID"));
     }
 
     #[test]
     fn test_supported_codes() {
-        let codes = AssetResolver::supported_codes();
+        let env = Env::default();
+        let codes = AssetResolver::supported_codes(&env);
         assert_eq!(codes.len(), 5);
     }
 
     #[test]
     fn test_count() {
-        assert_eq!(AssetResolver::count(), 5);
+        let env = Env::default();
+        assert_eq!(AssetResolver::count(&env), 5);
     }
 }

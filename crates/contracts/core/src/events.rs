@@ -46,6 +46,29 @@ pub struct DonationRejected {
     pub timestamp: u64,
 }
 
+/// Event emitted when a campaign is created
+#[derive(Clone)]
+pub struct CampaignCreated {
+    pub project_id: String,
+    pub beneficiary: Address,
+    pub goal_amount: i128,
+    pub goal_asset: String,
+    pub timestamp: u64,
+}
+
+/// Event emitted when campaign metadata is updated
+#[derive(Clone)]
+pub struct CampaignUpdated {
+    pub project_id: String,
+    pub timestamp: u64,
+}
+
+/// Event emitted when campaign status changes
+#[derive(Clone)]
+pub struct CampaignStatusChanged {
+    pub project_id: String,
+    pub previous_status: u32,
+    pub new_status: u32,
 /// Event emitted when a multi-signature withdrawal proposal is created.
 #[derive(Clone)]
 pub struct WithdrawalProposalCreated {
@@ -227,6 +250,10 @@ impl DonationRejected {
     }
 }
 
+impl CampaignCreated {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_created")),
 impl WithdrawalProposalCreated {
     pub fn emit(&self, env: &Env) {
         env.events().publish(
@@ -247,6 +274,7 @@ impl CampaignConfigured {
                 self.project_id.clone(),
                 self.beneficiary.clone(),
                 self.goal_amount,
+                self.goal_asset.clone(),
                 self.end_timestamp,
                 self.timestamp,
             ),
@@ -346,6 +374,23 @@ impl RefundApproved {
     }
 }
 
+impl CampaignUpdated {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_updated")),
+            (self.project_id.clone(), self.timestamp),
+        );
+    }
+}
+
+impl CampaignStatusChanged {
+    pub fn emit(&self, env: &Env) {
+        env.events().publish(
+            (self.project_id.clone(), String::from_str(env, "campaign_status_changed")),
+            (
+                self.project_id.clone(),
+                self.previous_status,
+                self.new_status,
 impl RefundProcessed {
     pub fn emit(&self, env: &Env) {
         env.events().publish(
@@ -405,6 +450,14 @@ pub const EVENT_WITHDRAWAL_PROCESSED: &[u8] = b"withdrawal_processed";
 /// Used by indexers to identify this event type
 pub const EVENT_DONATION_REJECTED: &[u8] = b"donation_rejected";
 
+/// Event type identifier for CampaignCreated
+pub const EVENT_CAMPAIGN_CREATED: &[u8] = b"campaign_created";
+
+/// Event type identifier for CampaignUpdated
+pub const EVENT_CAMPAIGN_UPDATED: &[u8] = b"campaign_updated";
+
+/// Event type identifier for CampaignStatusChanged
+pub const EVENT_CAMPAIGN_STATUS_CHANGED: &[u8] = b"campaign_status_changed";
 /// Event type identifier for WithdrawalProposalCreated
 pub const EVENT_WITHDRAWAL_PROPOSAL_CREATED: &[u8] = b"withdrawal_proposal_created";
 
