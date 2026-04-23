@@ -7,6 +7,9 @@ use environment_config::{EnvironmentConfig, check_testnet_connection};
 mod secure_vault;
 use secure_vault::{SecureVault, check_mainnet_readiness, toggle_network};
 
+mod asset_issuing;
+use asset_issuing::{AssetConfig, check_issuing_readiness, generate_issuing_keypair, establish_trustline, issue_asset, TrustlineConfig};
+
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
 
@@ -30,6 +33,7 @@ fn main() -> Result<()> {
         "network" => handle_network(),
         "vault" => handle_vault(),
         "toggle" => handle_toggle(&args[2..]),
+        "asset" => handle_asset(&args[2..]),
         "deploy" => handle_deploy(),
         "invoke" => handle_invoke(&args[2..]),
         "account" => handle_account(),
@@ -142,4 +146,76 @@ fn handle_toggle(args: &[String]) -> Result<()> {
     }
 
     toggle_network(args[0].as_str())
+}
+
+fn handle_asset(args: &[String]) -> Result<()> {
+    if args.is_empty() {
+        println!("🪙 Asset Management Commands");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("Usage: stellaraid-cli asset <command>");
+        println!();
+        println!("Commands:");
+        println!("  config     - Show asset configuration");
+        println!("  generate   - Generate issuing keypair");
+        println!("  check      - Check issuing readiness");
+        println!("  trustline  - Establish trustline");
+        println!("  issue      - Issue assets to recipient");
+        return Ok(());
+    }
+
+    match args[0].as_str() {
+        "config" => {
+            let config = AssetConfig::from_env()?;
+            config.display();
+        }
+        "generate" => {
+            generate_issuing_keypair()?;
+        }
+        "check" => {
+            check_issuing_readiness()?;
+        }
+        "trustline" => {
+            if args.len() < 3 {
+                println!("Usage: stellaraid-cli asset trustline <holder_public_key> [asset_code]");
+                return Ok(());
+            }
+            
+            let holder = &args[1];
+            let asset_config = AssetConfig::from_env()?;
+            let asset_code = if args.len() > 2 {
+                args[2].clone()
+            } else {
+                asset_config.code.clone()
+            };
+            
+            let network = env::var("SOROBAN_NETWORK").unwrap_or_else(|_| "testnet".to_string());
+            
+            let trustline_config = TrustlineConfig {
+                asset_code,
+                asset_issuer: asset_config.issuing_public_key,
+                holder_public_key: holder.clone(),
+            };
+            
+            establish_trustline(&trustline_config, &network)?;
+        }
+        "issue" => {
+            if args.len() < 3 {
+                println!("Usage: stellaraid-cli asset issue <recipient> <amount>");
+                return Ok(());
+            }
+            
+            let recipient = &args[1];
+            let amount: f64 = args[2].parse().context("Invalid amount")?;
+            let network = env::var("SOROBAN_NETWORK").unwrap_or_else(|_| "testnet".to_string());
+            let asset_config = AssetConfig::from_env()?;
+            
+            issue_asset(&asset_config, recipient, amount, &network)?;
+        }
+        _ => {
+            println!("Unknown asset command: {}", args[0]);
+            handle_asset(&[])?;
+        }
+    }
+
+    Ok(())
 }
