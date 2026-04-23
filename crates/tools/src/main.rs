@@ -10,6 +10,12 @@ use secure_vault::{SecureVault, check_mainnet_readiness, toggle_network};
 mod asset_issuing;
 use asset_issuing::{AssetConfig, check_issuing_readiness, generate_issuing_keypair, establish_trustline, issue_asset, TrustlineConfig};
 
+mod key_manager;
+use key_manager::KeyManager;
+
+mod encrypted_vault;
+use encrypted_vault::EncryptedVault;
+
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
 
@@ -37,6 +43,7 @@ fn main() -> Result<()> {
         "deploy" => handle_deploy(),
         "invoke" => handle_invoke(&args[2..]),
         "account" => handle_account(),
+        "keymanager" => handle_keymanager(&args[2..]),
         _ => {
             println!("Unknown command: {}", args[1]);
             Ok(())
@@ -219,3 +226,109 @@ fn handle_asset(args: &[String]) -> Result<()> {
 
     Ok(())
 }
+
+fn handle_keymanager(args: &[String]) -> Result<()> {
+    if args.is_empty() {
+        println!("🔑 Key Manager Commands");
+        println!("━━━━━━━━━━━━━━━━━━━━━━");
+        println!("Usage: stellaraid-cli keymanager <command>");
+        println!();
+        println!("Commands:");
+        println!("  encrypt <password> <secret_key>  - Encrypt a secret key");
+        println!("  decrypt <password> <encrypted>   - Decrypt an encrypted key");
+        println!("  init-vault <password>            - Initialize encrypted vault");
+        println!("  vault-status                     - Show vault status");
+        println!("  vault-save <path>                - Save vault to file");
+        println!("  vault-load <path> <password>     - Load vault from file");
+        return Ok(());
+    }
+
+    match args[0].as_str() {
+        "encrypt" => {
+            if args.len() < 3 {
+                println!("Usage: stellaraid-cli keymanager encrypt <password> <secret_key>");
+                return Ok(());
+            }
+            
+            let password = &args[1];
+            let secret_key = &args[2];
+            
+            KeyManager::validate_secret_key(secret_key)?;
+            let manager = KeyManager::from_password(password)?;
+            let encrypted_hex = manager.export_encrypted(secret_key)?;
+            
+            println!("✅ Key encrypted successfully");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Encrypted Key (hex format):");
+            println!("{}", encrypted_hex);
+            println!();
+            println!("💡 Store this encrypted key safely and use VAULT_MASTER_PASSWORD to decrypt");
+        }
+        "decrypt" => {
+            if args.len() < 3 {
+                println!("Usage: stellaraid-cli keymanager decrypt <password> <encrypted_hex>");
+                return Ok(());
+            }
+            
+            let password = &args[1];
+            let encrypted_hex = &args[2];
+            
+            let manager = KeyManager::from_password(password)?;
+            let encrypted = manager.import_encrypted(encrypted_hex)?;
+            let secret_key = manager.decrypt_key(&encrypted)?;
+            
+            println!("✅ Key decrypted successfully");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Secret Key: {}", secret_key);
+            println!();
+            println!("⚠️  WARNING: Keep this secret key secure!");
+        }
+        "init-vault" => {
+            if args.len() < 2 {
+                println!("Usage: stellaraid-cli keymanager init-vault <password>");
+                return Ok(());
+            }
+            
+            let password = &args[1];
+            let mut vault = EncryptedVault::with_password(password)?;
+            
+            println!("✅ Encrypted vault initialized");
+            vault.display_status();
+            println!();
+            println!("💡 Set VAULT_MASTER_PASSWORD={} in your .env file", password);
+        }
+        "vault-status" => {
+            let vault = EncryptedVault::from_env()?;
+            vault.display_status();
+        }
+        "vault-save" => {
+            if args.len() < 2 {
+                println!("Usage: stellaraid-cli keymanager vault-save <path>");
+                return Ok(());
+            }
+            
+            let path = &args[1];
+            let vault = EncryptedVault::from_env()?;
+            vault.save_to_file(path)?;
+        }
+        "vault-load" => {
+            if args.len() < 3 {
+                println!("Usage: stellaraid-cli keymanager vault-load <path> <password>");
+                return Ok(());
+            }
+            
+            let path = &args[1];
+            let password = &args[2];
+            
+            let vault = EncryptedVault::load_from_file(path, password)?;
+            vault.display_status();
+        }
+        _ => {
+            println!("Unknown keymanager command: {}", args[0]);
+            handle_keymanager(&[])?;
+        }
+    }
+
+    Ok(())
+}
+

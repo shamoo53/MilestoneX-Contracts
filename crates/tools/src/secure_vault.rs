@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use std::env;
 use std::fs;
-use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct SecureVault {
@@ -209,7 +208,7 @@ pub fn toggle_network(network: &str) -> Result<()> {
             println!("🔄 Switching to MAINNET...");
             check_mainnet_readiness()?;
         }
-        _ => anyhow::bail!("Unknown network: {}. Use 'testnet' or 'mainnet'"),
+        _ => anyhow::bail!("Unknown network: {}. Use 'testnet' or 'mainnet'", network),
     }
 
     Ok(())
