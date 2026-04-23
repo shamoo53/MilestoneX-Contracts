@@ -16,3 +16,8 @@ tokio = { workspace = true }
 anyhow = { workspace = true }
 dotenv = { workspace = true }
 toml = "0.8"
+aes-gcm = "0.10"
+rand = "0.8"
+hex = "0.4"
+sha2 = "0.10"
+zeroize = "1.6"
