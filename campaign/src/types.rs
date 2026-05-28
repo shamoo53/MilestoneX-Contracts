@@ -55,6 +55,21 @@ pub enum MilestoneStatus {
     Released, // Funds released to beneficiary
 }
 
+// ── Contract events ──────────────────────────────────────────────────────────
+
+/// Campaign lifecycle events
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum CampaignEvent {
+    Initialized {
+        creator: Address,
+        goal_amount: i128,
+        end_time: u64,
+        asset_count: u32,
+        milestone_count: u32,
+    },
+}
+
 /// Reusable struct for Stellar asset representation
 /// Enables consistent multi-asset support across the contract
 #[contracttype]

@@ -4,7 +4,7 @@ pub mod storage;
 pub mod types;
 
 use soroban_sdk::{contract, contractimpl, Env, Vec};
-use types::{CampaignData, CampaignStatus, Error, MilestoneData, MilestoneStatus, StellarAsset};
+use types::{CampaignData, CampaignStatus, Error, MilestoneData, MilestoneStatus, StellarAsset, CampaignEvent};
 use storage::{get_campaign, set_campaign, set_milestone};
 
 #[contract]
