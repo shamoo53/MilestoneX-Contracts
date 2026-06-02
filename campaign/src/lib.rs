@@ -1,9 +1,10 @@
 #![no_std]
 
+pub mod event;
 pub mod storage;
 pub mod types;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
 use types::{CampaignData, CampaignInitializedEvent, CampaignStatus, DonorRecord, Error, MilestoneData, MilestoneStatus, StellarAsset, AssetInfo};
 use storage::{get_campaign, set_campaign, get_milestone, set_milestone, get_donor, set_donor, get_total_raised as storage_get_total_raised, set_total_raised, increment_donor_asset_donation, get_donor_asset_donation};
 
@@ -24,7 +25,7 @@ impl CampaignContract {
     /// Can only be called once per contract instance
     ///
     /// # Panics
-    /// - `Error::UnauthorizedCreator`   if caller is not the creator
+    /// - `Error::Unauthorized`   if caller is not the creator
     /// - `Error::AlreadyInitialized`    if campaign already exists
     /// - `Error::InvalidGoalAmount`     if goal_amount <= 0
     /// - `Error::InvalidEndTime`        if end_time <= current ledger timestamp
@@ -121,8 +122,15 @@ impl CampaignContract {
             _ => panic_with_error(&env, Error::CampaignNotActive),
         }
 
+        if amount <= 0 || (campaign.min_donation_amount > 0 && amount < campaign.min_donation_amount) {
+            panic_with_error(&env, Error::DonationTooSmall);
+        }
+
         // Issue #195 – update raised_amount atomically
-        campaign.raised_amount += amount;
+        campaign.raised_amount = campaign
+            .raised_amount
+            .checked_add(amount)
+            .unwrap_or_else(|| panic_with_error(&env, Error::Overflow));
 
         // Issue #198 – goal reached status transition
         if campaign.raised_amount >= campaign.goal_amount
@@ -138,7 +146,9 @@ impl CampaignContract {
         set_campaign(&env, &campaign);
 
         // Issue #195 – update TotalRaised storage
-        let new_total = storage_get_total_raised(&env) + amount;
+        let new_total = storage_get_total_raised(&env)
+            .checked_add(amount)
+            .unwrap_or_else(|| panic_with_error(&env, Error::Overflow));
         set_total_raised(&env, new_total);
 
         // Track per-asset donation for pro-rata refund calculation
@@ -152,7 +162,10 @@ impl CampaignContract {
             asset: asset.clone(),
             last_donation_time: 0,
         });
-        donor_record.total_donated += amount;
+        donor_record.total_donated = donor_record
+            .total_donated
+            .checked_add(amount)
+            .unwrap_or_else(|| panic_with_error(&env, Error::Overflow));
         donor_record.asset = asset;
         donor_record.last_donation_time = env.ledger().timestamp();
         set_donor(&env, &donor, &donor_record);
@@ -165,15 +178,15 @@ impl CampaignContract {
                 {
                     milestone.status = MilestoneStatus::Unlocked;
                     set_milestone(&env, i, &milestone);
-                    env.events().publish(
-                        ("campaign", "milestone_unlocked"),
-                        (i, milestone.target_amount),
-                    );
+                    // Issue #229 – emit milestone_unlocked event
+                    event::milestone_unlocked(&env, i, milestone.target_amount, campaign.raised_amount);
                 }
             }
         }
 
-        env.events().publish(("campaign", "donation_received"), (donor, amount));
+        // Issue #228 – emit donation_received event with required schema
+        let asset_code = resolve_asset_code(&env, &asset, &campaign);
+        event::donation_received(&env, &donor, amount, asset_code, campaign.raised_amount, env.ledger().timestamp());
     }
 
     /// Issue #197 – Returns the total amount raised by the campaign.
@@ -377,11 +390,11 @@ impl CampaignContract {
 /// Issue #175 – assert the current invoker is the campaign creator.
 ///
 /// Reads the creator address from campaign storage and calls `require_auth()`.
-/// Panics with `Error::UnauthorizedCreator` if the campaign is not initialized;
+/// Panics with `Error::Unauthorized` if the campaign is not initialized;
 /// Soroban's auth framework panics if the invoker is not the creator.
 fn require_creator(env: &Env) {
     let campaign =
-        get_campaign(env).unwrap_or_else(|| panic_with_error(env, Error::UnauthorizedCreator));
+        get_campaign(env).unwrap_or_else(|| panic_with_error(env, Error::Unauthorized));
     campaign.creator.require_auth();
 }
 
@@ -460,6 +473,20 @@ mod test {
 }
 
     Ok(())
+/// Resolves the asset code string for an AssetInfo.
+/// For Native XLM returns "XLM"; for Stellar(addr) looks up the code in accepted_assets.
+fn resolve_asset_code(env: &Env, asset: &AssetInfo, campaign: &CampaignData) -> String {
+    match asset {
+        AssetInfo::Native => String::from_str(env, "XLM"),
+        AssetInfo::Stellar(addr) => {
+            campaign
+                .accepted_assets
+                .iter()
+                .find(|a| a.issuer == Some(addr.clone()))
+                .map(|a| a.asset_code.clone())
+                .unwrap_or_else(|| String::from_str(env, "UNKNOWN"))
+        }
+    }
 }
 
 /// Panics the contract execution with the given error code.
