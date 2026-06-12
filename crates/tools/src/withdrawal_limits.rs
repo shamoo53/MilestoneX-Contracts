@@ -1,12 +1,19 @@
 use anyhow::{anyhow, Result};
 
-/// Issue #139 – Add Withdrawal Limits
+/// Issue #139 — Add Withdrawal Limits
 /// Defines per-campaign and global withdrawal rules and enforces them.
 ///
 /// # Defaults
 /// - Minimum withdrawal: 100 stroops
 /// - Maximum per withdrawal: 10,000,000,000 stroops (1000 XLM)
 /// - No global cap by default
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// let limits = WithdrawalLimits::new(100, 5_000_000, Some(8_000_000))?;
+/// limits.validate(1_000_000, 5_000_000)?; // checks min, max, and total cap
+/// ```
 
 /// Configurable withdrawal limits for a campaign.
 #[derive(Debug, Clone, PartialEq)]
