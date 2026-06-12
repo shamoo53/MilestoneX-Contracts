@@ -140,6 +140,7 @@ impl KeyManager {
 
     /// Validate a secret key format (basic Stellar check).
     /// Must start with 'S' and be at least 56 characters.
+    #[must_use]
     pub fn validate_secret_key(secret_key: &str) -> Result<()> {
         if !secret_key.starts_with('S') {
             anyhow::bail!("Secret key must start with 'S' (Stellar format)");
@@ -152,6 +153,7 @@ impl KeyManager {
 
     /// Validate a public key format (basic Stellar check).
     /// Must start with 'G' and be at least 56 characters.
+    #[must_use]
     pub fn validate_public_key(public_key: &str) -> Result<()> {
         if !public_key.starts_with('G') {
             anyhow::bail!("Public key must start with 'G' (Stellar format)");
