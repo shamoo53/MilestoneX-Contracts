@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # OrbitChain Signing Request & Response Handler Examples
-# This script demonstrates the complete signing workflow
+#
+# This script demonstrates the complete signing workflow with
+# detailed expected outputs for each step.
+#
+# Usage: bash SIGNING_EXAMPLES.sh
 
 set -e
 
