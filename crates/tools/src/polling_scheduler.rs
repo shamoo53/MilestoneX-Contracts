@@ -1,3 +1,8 @@
+//! Polling scheduler for the Horizon payment ingestion worker.
+//!
+//! Runs a blocking loop that calls a payment-fetch task on every tick.
+//! Issue #128 — logs health status and alerts on consecutive failures.
+
 use std::time::Duration;
 
 use crate::worker_logger::{LogLevel, WorkerLogger};
