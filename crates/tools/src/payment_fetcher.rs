@@ -1,3 +1,8 @@
+//! Horizon payment record parsing and recipient filtering.
+//!
+//! Parses flat key→value Horizon JSON records into `IncomingPayment` structs
+//! and provides utilities for filtering by recipient.
+
 use std::collections::HashMap;
 
 /// A parsed incoming payment from the Stellar Horizon API.
