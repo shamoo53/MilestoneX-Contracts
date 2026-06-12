@@ -172,6 +172,7 @@ impl AccountFunding {
     }
 
     /// Fund account on testnet
+    #[inline]
     pub fn fund_testnet(&mut self, amount: f64) -> Result<()> {
         if amount <= 0.0 {
             anyhow::bail!("Amount must be positive");
@@ -195,7 +196,7 @@ impl AccountFunding {
         Ok(())
     }
 
-    /// Display funding status
+    /// Display account safely (masked)
     pub fn display_status(&self) {
         println!("💵 Account Funding Status");
         println!("━━━━━━━━━━━━━━━━━━━━━━━");
