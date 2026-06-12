@@ -1,17 +1,17 @@
-# 🌟 StellarAid
+# 🌟 OrbitChain
 
-[![CI](https://github.com/YOUR_USERNAME/stellaraid-contract/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/stellaraid-contract/actions)
+[![CI](https://github.com/YOUR_USERNAME/orbitchain-contract/workflows/CI/badge.svg)](https://github.com/YOUR_USERNAME/orbitchain-contract/actions)
 
 A blockchain-based crowdfunding platform built on the **Stellar Network** for transparent, borderless, and secure fundraising.
 
-StellarAid enables project creators to raise funds in **XLM** or any Stellar-based asset (USDC, NGNT, custom tokens), while donors can contribute with full on-chain transparency.
+OrbitChain enables project creators to raise funds in **XLM** or any Stellar-based asset (USDC, NGNT, custom tokens), while donors can contribute with full on-chain transparency.
 
 ## � Workspace Layout
 
 This project uses a Rust Cargo workspace with the following structure:
 
 ```
-stellarAid-contract/
+orbitChain-contract/
 ├── Cargo.toml                 # Workspace configuration
 ├── crates/
 │   ├── contracts/
@@ -29,12 +29,12 @@ stellarAid-contract/
 
 ### Crates Overview
 
-- **`stellaraid-core`**: Main Soroban smart contract implementing the crowdfunding logic
-- **`stellaraid-tools`**: Advanced CLI utilities for contract deployment, configuration, transaction management, and debugging
+- **`orbitchain-core`**: Main Soroban smart contract implementing the crowdfunding logic
+- **`orbitchain-tools`**: Advanced CLI utilities for contract deployment, configuration, transaction management, and debugging
 
 ## 🚀 CLI Features
 
-The StellarAid CLI provides comprehensive tools for contract management, transaction handling, and debugging:
+The OrbitChain CLI provides comprehensive tools for contract management, transaction handling, and debugging:
 
 ### Core Commands
 - `deploy` - Deploy contracts to Stellar networks
@@ -56,26 +56,26 @@ The StellarAid CLI provides comprehensive tools for contract management, transac
 
 ```bash
 # Get transaction history with summary
-stellaraid-cli tx-history --account GABJ2... --summary --export-csv transactions.csv
+orbitchain-cli tx-history --account GABJ2... --summary --export-csv transactions.csv
 
 # Execute batch payments
-stellaraid-cli batch execute --file payments.csv --parallel --continue-on-error
+orbitchain-cli batch execute --file payments.csv --parallel --continue-on-error
 
 # Debug network issues
-stellaraid-cli debug network-status --network testnet --detailed
+orbitchain-cli debug network-status --network testnet --detailed
 
 # Query contract method
-stellaraid-cli contract query --contract CA3D... --method get_balance --simulate
+orbitchain-cli contract query --contract CA3D... --method get_balance --simulate
 
 # Create and fund new account
-stellaraid-cli account create --generate-mnemonic
-stellaraid-cli account fund --account GABJ2... --network testnet
+orbitchain-cli account create --generate-mnemonic
+orbitchain-cli account fund --account GABJ2... --network testnet
 
 # Build transaction signing request
-stellaraid-cli signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
+orbitchain-cli signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
 
 # Process wallet response
-stellaraid-cli response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
+orbitchain-cli response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
 ```
 
 For detailed documentation, see [CLI Advanced Guide](CLI_ADVANCED_GUIDE.md) and [Signing Request Guide](SIGNING_REQUEST_GUIDE.md).
@@ -87,8 +87,8 @@ For detailed documentation, see [CLI Advanced Guide](CLI_ADVANCED_GUIDE.md) and 
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/stellaraid-contract.git
-   cd stellaraid-contract
+   git clone https://github.com/YOUR_USERNAME/orbitchain-contract.git
+   cd orbitchain-contract
    ```
 
 2. **Install Rust toolchain** (automatically configured by `rust-toolchain.toml`)
@@ -121,7 +121,7 @@ For detailed documentation, see [CLI Advanced Guide](CLI_ADVANCED_GUIDE.md) and 
    make build
 
    # Or using cargo directly
-   cargo build -p stellaraid-core --target wasm32-unknown-unknown
+   cargo build -p orbitchain-core --target wasm32-unknown-unknown
    ```
 
 ### Prerequisites
@@ -175,10 +175,10 @@ make help
 
 ```bash
 # Build the core contract for WASM
-cargo build -p stellaraid-core --target wasm32-unknown-unknown --release
+cargo build -p orbitchain-core --target wasm32-unknown-unknown --release
 
 # Build the CLI tools
-cargo build -p stellaraid-tools
+cargo build -p orbitchain-tools
 
 # Build entire workspace
 cargo build --workspace
@@ -188,7 +188,7 @@ cargo build --workspace
 
 ```bash
 # Run contract tests
-cargo test -p stellaraid-core
+cargo test -p orbitchain-core
 
 # Run all tests
 cargo test --workspace
@@ -198,35 +198,35 @@ cargo test --workspace
 
 ```bash
 # Check configuration
-cargo run -p stellaraid-tools -- config check
+cargo run -p orbitchain-tools -- config check
 
 # Initialize configuration (creates .env and contract ID files)
-cargo run -p stellaraid-tools -- config init
+cargo run -p orbitchain-tools -- config init
 
 # Show network configuration
-cargo run -p stellaraid-tools -- network
+cargo run -p orbitchain-tools -- network
 
 # Deploy contract to testnet
-cargo run -p stellaraid-tools -- deploy --network testnet
+cargo run -p orbitchain-tools -- deploy --network testnet
 
 # Deploy contract to sandbox (local)
-cargo run -p stellaraid-tools -- deploy --network sandbox
+cargo run -p orbitchain-tools -- deploy --network sandbox
 
 # Invoke the ping method on deployed contract
-cargo run -p stellaraid-tools -- invoke ping
+cargo run -p orbitchain-tools -- invoke ping
 
 # Invoke with custom network
-cargo run -p stellaraid-tools -- invoke ping --network testnet
+cargo run -p orbitchain-tools -- invoke ping --network testnet
 
 # Show deployed contract ID
-cargo run -p stellaraid-tools -- contract-id
-cargo run -p stellaraid-tools -- contract-id --network testnet
+cargo run -p orbitchain-tools -- contract-id
+cargo run -p orbitchain-tools -- contract-id --network testnet
 
 # Prepare wallet signing flow (freighter/albedo/lobstr)
-cargo run -p stellaraid-tools -- prepare-wallet-signing --wallet freighter --xdr "<UNSIGNED_XDR>"
+cargo run -p orbitchain-tools -- prepare-wallet-signing --wallet freighter --xdr "<UNSIGNED_XDR>"
 
 # Complete wallet signing flow with wallet callback/response payload
-cargo run -p stellaraid-tools -- complete-wallet-signing --wallet freighter --attempt-id "<ATTEMPT_ID>" --response "<WALLET_RESPONSE>" --started-at-unix 1700000000
+cargo run -p orbitchain-tools -- complete-wallet-signing --wallet freighter --attempt-id "<ATTEMPT_ID>" --response "<WALLET_RESPONSE>" --started-at-unix 1700000000
 ```
 
 ## 🚀 Quick Start: Deploy Your First Contract
@@ -287,24 +287,24 @@ SOROBAN_ADMIN_KEY=GA7...
 
 ```bash
 # Deploy the contract
-cargo run -p stellaraid-tools -- deploy --network testnet
+cargo run -p orbitchain-tools -- deploy --network testnet
 ```
 
 Expected output:
 
 ```
 🚀 Deploying to network: testnet
-📦 Using WASM: target/wasm32-unknown-unknown/debug/stellaraid_core.wasm
+📦 Using WASM: target/wasm32-unknown-unknown/debug/orbitchain_core.wasm
 ✅ Contract deployed successfully!
 📝 Contract ID: CB7...ABC
-✅ Contract ID stored in .stellaraid_contract_id
+✅ Contract ID stored in .orbitchain_contract_id
 ```
 
 ### Step 4: Invoke the ping Method
 
 ```bash
 # Invoke ping
-cargo run -p stellaraid-tools -- invoke ping
+cargo run -p orbitchain-tools -- invoke ping
 ```
 
 Expected output:
@@ -320,10 +320,10 @@ Expected output:
 
 ```bash
 # View all deployed contract IDs
-cargo run -p stellaraid-tools -- contract-id
+cargo run -p orbitchain-tools -- contract-id
 
 # View network configuration
-cargo run -p stellaraid-tools -- network
+cargo run -p orbitchain-tools -- network
 ```
 
 ### Using Sandbox (Local Development)
@@ -335,17 +335,17 @@ For local testing without testnet:
 soroban sandbox start
 
 # Deploy to sandbox
-cargo run -p stellaraid-tools -- deploy --network sandbox
+cargo run -p orbitchain-tools -- deploy --network sandbox
 
 # Invoke on sandbox
-cargo run -p stellaraid-tools -- invoke ping --network sandbox
+cargo run -p orbitchain-tools -- invoke ping --network sandbox
 ```
 
 ### Troubleshooting
 
 - **"WASM file not found"**: Run `make wasm` to build the contract first
 - **"No contract ID found"**: Deploy a contract first with `deploy` command
-- **"Configuration error"**: Run `cargo run -p stellaraid-tools -- config check` to diagnose
+- **"Configuration error"**: Run `cargo run -p orbitchain-tools -- config check` to diagnose
 - **"soroban: command not found"**: Install with `cargo install soroban-cli`
 
 ## 📌 Features
@@ -372,7 +372,7 @@ cargo run -p stellaraid-tools -- invoke ping --network sandbox
 
 ## 🏗️ Architecture Overview
 
-StellarAid Blockchain Layer is built with:
+OrbitChain Blockchain Layer is built with:
 
 - Stellar Testnet / Mainnet support
 - Donation verification
@@ -381,7 +381,7 @@ StellarAid Blockchain Layer is built with:
 
 ## 💰 Fee Estimation System
 
-StellarAid includes a comprehensive **fee estimation service** that provides accurate transaction fee calculations, surge pricing detection, and multi-currency conversion.
+OrbitChain includes a comprehensive **fee estimation service** that provides accurate transaction fee calculations, surge pricing detection, and multi-currency conversion.
 
 ### Features
 
@@ -432,8 +432,8 @@ async fn main() -> Result<()> {
 Click the **“Fork”** button in the top‑right of the GitHub repo and clone your fork:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/stellaraid-contract.git
-cd stellaraid-contract
+git clone https://github.com/YOUR_USERNAME/orbitchain-contract.git
+cd orbitchain-contract
 ```
 
 ### 2. Create a Branch
@@ -536,7 +536,7 @@ Environment variable override behavior
 Verify the resolved network with the included CLI tool:
 
 ```bash
-cargo run -p stellaraid-tools -- network
+cargo run -p orbitchain-tools -- network
 ```
 
 See `.env.example` for a safe example of environment variables you can copy to `.env`.

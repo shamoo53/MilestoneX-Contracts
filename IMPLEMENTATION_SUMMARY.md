@@ -149,7 +149,7 @@ response submit             - Submit signed transaction (placeholder)
 
 ### Building a Donation Request
 ```bash
-stellaraid-cli signing build-donation \
+orbitchain-cli signing build-donation \
   GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH \
   1 \
   5000000 \
@@ -160,7 +160,7 @@ stellaraid-cli signing build-donation \
 ### Processing a Wallet Response
 ```bash
 RESPONSE='{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
-stellaraid-cli response process "$RESPONSE"
+orbitchain-cli response process "$RESPONSE"
 ```
 
 ### Complete Workflow
@@ -172,20 +172,20 @@ stellar-cli signing build-donation ... > signing_request.json
 # User reviews and signs with private key
 
 # 3. Process response
-stellaraid-cli response process "signed_response.json"
+orbitchain-cli response process "signed_response.json"
 
 # 4. Save for submission
-stellaraid-cli response save "response.json" "signed_tx.json"
+orbitchain-cli response save "response.json" "signed_tx.json"
 
 # 5. Submit to network
-stellaraid-cli response submit "signed_tx.json"
+orbitchain-cli response submit "signed_tx.json"
 ```
 
 ## Architecture
 
 ### Module Structure
 ```
-stellaraid-tools/
+orbitchain-tools/
 ├── src/
 │   ├── signing_request.rs (297 lines)
 │   │   ├── SigningRequest

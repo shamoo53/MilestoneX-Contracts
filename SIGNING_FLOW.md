@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide shows how to implement the complete signing request and response handling workflow in a real StellarAid application.
+This guide shows how to implement the complete signing request and response handling workflow in a real OrbitChain application.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ This guide shows how to implement the complete signing request and response hand
                    ▼
 ┌─────────────────────────────────────────────────────────┐
 │  Backend (Rust CLI / API)                               │
-│  - stellaraid-cli signing build-donation                │
+│  - orbitchain-cli signing build-donation                │
 │  - SigningRequestBuilder                                │
 └──────────────────┬──────────────────────────────────────┘
                    │
@@ -56,7 +56,7 @@ This guide shows how to implement the complete signing request and response hand
 
 ### In Backend (Rust)
 ```rust
-use stellaraid_tools::signing_request::TransactionBuilder;
+use orbitchain_tools::signing_request::TransactionBuilder;
 
 let request = TransactionBuilder::build_donation_request(
     "GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH".to_string(),
@@ -76,7 +76,7 @@ println!("{}", json);
 
 ### CLI Command
 ```bash
-stellaraid-cli signing build-donation \
+orbitchain-cli signing build-donation \
   GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH \
   1 \
   5000000 \
@@ -137,7 +137,7 @@ try {
 
 ### Backend (Rust)
 ```rust
-use stellaraid_tools::response_handler::ResponseHandler;
+use orbitchain_tools::response_handler::ResponseHandler;
 
 let response_json = r#"{
   "requestId": "req_1713969841234",
@@ -161,7 +161,7 @@ println!("✅ Transaction signed by: {}", processed.signed_transaction.signer);
 ### CLI Command
 ```bash
 RESPONSE='{"requestId":"req_1713969841234","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1713969850}'
-stellaraid-cli response process "$RESPONSE"
+orbitchain-cli response process "$RESPONSE"
 ```
 
 ### Output
@@ -180,7 +180,7 @@ Ready for submission
 
 ### Save to File
 ```rust
-use stellaraid_tools::response_handler::ResponseHandler;
+use orbitchain_tools::response_handler::ResponseHandler;
 
 // Save signed transaction
 ResponseHandler::save_to_file(
@@ -193,14 +193,14 @@ println!("Transaction saved for later submission");
 
 ### CLI Command
 ```bash
-stellaraid-cli response save "$RESPONSE" "donations/donation_signed.json"
+orbitchain-cli response save "$RESPONSE" "donations/donation_signed.json"
 ```
 
 ## Step 5: Submit to Network
 
 ### Backend (Rust) - Future Implementation
 ```rust
-use stellaraid_tools::response_handler::ResponseHandler;
+use orbitchain_tools::response_handler::ResponseHandler;
 
 // Load signed transaction
 let signed_tx = ResponseHandler::load_from_file("donations/donation_signed.json")?;
@@ -221,7 +221,7 @@ database::update_donation_status(
 
 ### CLI Command
 ```bash
-stellaraid-cli response submit "donations/donation_signed.json"
+orbitchain-cli response submit "donations/donation_signed.json"
 ```
 
 ## Error Handling
@@ -253,7 +253,7 @@ match ResponseHandler::process_response(response_json) {
 
 ```bash
 # Built for testnet
-stellaraid-cli signing build-donation GBJCHU... 1 5000000 XLM
+orbitchain-cli signing build-donation GBJCHU... 1 5000000 XLM
 
 # But signing response came from mainnet
 # Error: Network mismatch - request expects 'testnet', response is 'mainnet'

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The StellarAid signing request and response handler modules provide a complete workflow for building, signing, and processing blockchain transactions through wallet integration.
+The OrbitChain signing request and response handler modules provide a complete workflow for building, signing, and processing blockchain transactions through wallet integration.
 
 ## Features
 
@@ -20,37 +20,37 @@ The signing request module handles the creation of transaction signing requests 
 
 ##### Donation Request
 ```bash
-stellaraid-cli signing build-donation <donor_address> <campaign_id> <amount> [asset] [memo]
+orbitchain-cli signing build-donation <donor_address> <campaign_id> <amount> [asset] [memo]
 ```
 
 Example:
 ```bash
-stellaraid-cli signing build-donation GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH 1 10000000 XLM "Supporting education"
+orbitchain-cli signing build-donation GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH 1 10000000 XLM "Supporting education"
 ```
 
 ##### Campaign Creation Request
 ```bash
-stellaraid-cli signing build-campaign <creator_address> <title> <goal> <deadline_timestamp>
+orbitchain-cli signing build-campaign <creator_address> <title> <goal> <deadline_timestamp>
 ```
 
 Example:
 ```bash
-stellaraid-cli signing build-campaign GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH "Education Fund" 1000000000 1735689600
+orbitchain-cli signing build-campaign GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH "Education Fund" 1000000000 1735689600
 ```
 
 ##### Custom Transaction Request
 ```bash
-stellaraid-cli signing build-custom <xdr> [description]
+orbitchain-cli signing build-custom <xdr> [description]
 ```
 
 #### Validating Requests
 ```bash
-stellaraid-cli signing validate <json_file>
+orbitchain-cli signing validate <json_file>
 ```
 
 #### Exporting for Wallet
 ```bash
-stellaraid-cli signing export <json_file>
+orbitchain-cli signing export <json_file>
 ```
 
 ### Response Handler Module (`response_handler.rs`)
@@ -68,37 +68,37 @@ The response handler module processes signed transactions returned from wallets 
 
 ##### Parse Wallet Response
 ```bash
-stellaraid-cli response process <json_response>
+orbitchain-cli response process <json_response>
 ```
 
 Example:
 ```bash
-stellaraid-cli response process '{"requestId":"req_123","xdr":"AAAAA...","signer":"GBJCHU...","signedAt":1234567890}'
+orbitchain-cli response process '{"requestId":"req_123","xdr":"AAAAA...","signer":"GBJCHU...","signedAt":1234567890}'
 ```
 
 ##### Validate Signed Transaction
 ```bash
-stellaraid-cli response validate <json_file>
+orbitchain-cli response validate <json_file>
 ```
 
 ##### Save Signed Transaction
 ```bash
-stellaraid-cli response save <json_response> <output_file>
+orbitchain-cli response save <json_response> <output_file>
 ```
 
 Example:
 ```bash
-stellaraid-cli response save '{"requestId":"req_123",...}' signed_tx.json
+orbitchain-cli response save '{"requestId":"req_123",...}' signed_tx.json
 ```
 
 ##### Load Signed Transaction
 ```bash
-stellaraid-cli response load <json_file>
+orbitchain-cli response load <json_file>
 ```
 
 ##### Submit Signed Transaction
 ```bash
-stellaraid-cli response submit <json_file>
+orbitchain-cli response submit <json_file>
 ```
 
 ## Complete Workflow Example
@@ -106,7 +106,7 @@ stellaraid-cli response submit <json_file>
 ### 1. Build Signing Request
 ```bash
 # Create a donation signing request
-stellaraid-cli signing build-donation \
+orbitchain-cli signing build-donation \
   GBJCHUKZMTFSLOMNC2P4TS4VJJBTCYL3SDKW3KSMSGQUZ6EFLXVX77JVH \
   1 \
   5000000 \
@@ -132,19 +132,19 @@ Output shows:
 SIGNED_RESPONSE='{"requestId":"req_123...","xdr":"AAAAA...","signer":"GBJCHU...","signedAt":1234567890}'
 
 # Process and validate
-stellaraid-cli response process "$SIGNED_RESPONSE"
+orbitchain-cli response process "$SIGNED_RESPONSE"
 ```
 
 ### 4. Save for Submission
 ```bash
 # Save to file for later submission
-stellaraid-cli response save "$SIGNED_RESPONSE" my_signed_tx.json
+orbitchain-cli response save "$SIGNED_RESPONSE" my_signed_tx.json
 ```
 
 ### 5. Submit to Network
 ```bash
 # Submit to Stellar network
-stellaraid-cli response submit my_signed_tx.json
+orbitchain-cli response submit my_signed_tx.json
 ```
 
 ## Data Structures
@@ -176,7 +176,7 @@ stellaraid-cli response submit my_signed_tx.json
 ### Building a Signing Request in Code
 
 ```rust
-use stellaraid_tools::signing_request::{SigningRequestBuilder, TransactionBuilder};
+use orbitchain_tools::signing_request::{SigningRequestBuilder, TransactionBuilder};
 
 // Create a donation request
 let request = TransactionBuilder::build_donation_request(
@@ -198,7 +198,7 @@ println!("{}", wallet_format);
 ### Processing a Response in Code
 
 ```rust
-use stellaraid_tools::response_handler::ResponseHandler;
+use orbitchain_tools::response_handler::ResponseHandler;
 
 let response_json = r#"{
   "requestId": "req_123",
@@ -282,6 +282,6 @@ cargo test --lib response_handler
 
 ## Related Commands
 
-- `stellaraid-cli keypair` - Manage keypairs
-- `stellaraid-cli config` - Configure network settings
-- `stellaraid-cli network` - Show network info
+- `orbitchain-cli keypair` - Manage keypairs
+- `orbitchain-cli config` - Configure network settings
+- `orbitchain-cli network` - Show network info
