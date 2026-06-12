@@ -21,6 +21,7 @@ impl UnmatchedPayment {
     }
 
     /// Returns true if this payment can still be retried.
+    #[must_use]
     pub fn can_retry(&self) -> bool {
         self.retry_count < MAX_RETRIES
     }
@@ -38,4 +39,35 @@ pub fn log_unmatched(payment: &UnmatchedPayment) {
         "[UNMATCHED] tx={} memo={:?} amount={} retries={}",
         payment.transaction_hash, payment.memo, payment.amount, payment.retry_count
     );
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_payment_can_retry() {
+        let payment = UnmatchedPayment::new("tx_1", Some("campaign:42".into()), "100");
+        assert!(payment.can_retry());
+        assert_eq!(payment.retry_count, 0);
+    }
+
+    #[test]
+    fn retry_count_increments() {
+        let mut payment = UnmatchedPayment::new("tx_1", None, "50");
+        assert_eq!(payment.record_retry(), 1);
+        assert_eq!(payment.record_retry(), 2);
+        assert_eq!(payment.record_retry(), 3);
+        assert!(!payment.can_retry());
+    }
+
+    #[test]
+    fn cannot_retry_after_max() {
+        let mut payment = UnmatchedPayment::new("tx_1", None, "50");
+        payment.record_retry();
+        payment.record_retry();
+        payment.record_retry();
+        assert!(!payment.can_retry());
+    }
 }
