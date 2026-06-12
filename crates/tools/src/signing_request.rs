@@ -1,3 +1,8 @@
+//! Transaction signing request builder.
+//!
+//! Builds signing requests for donation, campaign creation, and custom
+//! transactions, with JSON serialization for wallet compatibility and QR export.
+
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
