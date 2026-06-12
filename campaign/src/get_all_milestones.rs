@@ -12,6 +12,7 @@ use crate::views::{self, MilestoneView};
 ///
 /// # Panics
 /// - `Error::NotInitialized` — contract not yet initialised.
+#[must_use]
 pub fn get_all_milestones_view(env: &Env) -> Vec<MilestoneView> {
     let campaign = get_campaign(env)
         .unwrap_or_else(|| panic_with_error!(env, Error::NotInitialized));
