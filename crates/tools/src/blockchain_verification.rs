@@ -1,3 +1,8 @@
+//! Blockchain transaction verification.
+//!
+//! Fetches and verifies Stellar transactions by hash, validates timestamps,
+//! generates block explorer URLs, and supports verifiable certificates.
+
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
 use std::time::{Duration, Instant};

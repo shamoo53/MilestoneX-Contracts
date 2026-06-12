@@ -1,3 +1,8 @@
+//! Memory-efficient streaming data processor.
+//!
+//! Processes large datasets in configurable batch sizes with memory limits,
+//! disk-based cache support, per-chunk aggregation, and chunked file loading.
+
 use anyhow::{Result, Context, anyhow};
 use serde::{Serialize, Deserialize};
 use std::collections::VecDeque;
