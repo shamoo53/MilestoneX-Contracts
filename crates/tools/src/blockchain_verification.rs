@@ -87,6 +87,7 @@ pub struct BlockchainVerifier {
 
 impl BlockchainVerifier {
     /// Create a new verifier with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: VerificationConfig::default(),
@@ -94,6 +95,7 @@ impl BlockchainVerifier {
     }
 
     /// Create a new verifier with custom configuration
+    #[must_use]
     pub fn with_config(config: VerificationConfig) -> Self {
         Self { config }
     }
