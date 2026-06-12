@@ -27,7 +27,7 @@ pub const TEMPORARY_BUMP_THRESHOLD: u32 = 17_280;
 // ─── Internal bump helper ─────────────────────────────────────────────────────
 
 /// Bump a persistent key's TTL if it is below the threshold.
-#[inline]
+#[must_use]
 fn bump_persistent(env: &Env, key: &DataKey) {
     env.storage()
         .persistent()
@@ -87,6 +87,7 @@ pub fn get_milestone(env: &Env, index: u32) -> Option<MilestoneData> {
 }
 
 /// Same as `get_milestone` but panics with `MilestoneNotFound`.
+#[must_use]
 pub fn get_milestone_or_panic(env: &Env, index: u32) -> MilestoneData {
     get_milestone(env, index)
         .unwrap_or_else(|| panic_with_error!(env, Error::MilestoneNotFound))
@@ -112,6 +113,7 @@ pub fn get_donor(env: &Env, donor: &Address) -> Option<DonorRecord> {
 
 /// Load a donor record or return a zeroed `DonorRecord`.
 /// Convenience wrapper — avoids `unwrap_or_default()` scattered across callers.
+#[must_use]
 pub fn get_donor_or_default(env: &Env, donor: &Address) -> DonorRecord {
     get_donor(env, donor).unwrap_or_else(|| {
         // Return a zeroed DonorRecord — caller should update the relevant fields
