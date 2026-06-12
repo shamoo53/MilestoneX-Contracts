@@ -45,10 +45,17 @@ esac
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 WASM_PATH="target/wasm32-unknown-unknown/release/orbitchain_core.wasm"
+OPTIMIZED_WASM_PATH="target/wasm32v1-none/release/orbitchain_core.wasm"
 DEPLOYMENTS_DIR="deployments"
 DEPLOYMENT_FILE="${DEPLOYMENTS_DIR}/${NETWORK}.json"
 
 # ── Validate prerequisites ────────────────────────────────────────────────────
+# Use optimized WASM if available, otherwise fall back to standard build
+if [ -f "$OPTIMIZED_WASM_PATH" ]; then
+  WASM_PATH="$OPTIMIZED_WASM_PATH"
+  echo "ℹ️  Using optimized WASM: $WASM_PATH"
+fi
+
 if [ ! -f "$WASM_PATH" ]; then
   echo "❌ WASM not found at $WASM_PATH — run 'make build-wasm' first"
   exit 1
