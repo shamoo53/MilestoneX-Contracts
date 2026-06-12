@@ -46,11 +46,13 @@ impl PollConfig {
     }
 
     /// Doubles the interval up to `max_interval` for exponential back-off on errors.
+    #[inline]
     pub fn back_off(&mut self) {
         self.interval = (self.interval * 2).min(self.max_interval);
     }
 
     /// Resets the interval back to its original configured default.
+    #[inline]
     pub fn reset(&mut self) {
         self.interval = self.default_interval;
     }

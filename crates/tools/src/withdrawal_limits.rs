@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 /// Defines per-campaign and global withdrawal rules and enforces them.
 
 /// Configurable withdrawal limits for a campaign.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WithdrawalLimits {
     /// Maximum single withdrawal amount (in stroops).
     pub max_per_withdrawal: i128,
