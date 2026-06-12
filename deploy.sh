@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# OrbitChain deploy script — build and deploy Soroban contracts
+#
+# Usage:   ./deploy.sh [--wasm]   (wasm-only)  |  ./deploy.sh  (full deploy)
+#          NETWORK=testnet ./deploy.sh          (override network)
+#
+# Prerequisites: soroban-cli, cargo, rustup target add wasm32-unknown-unknown
 # deploy.sh — Deploy OrbitChain core contract and store the contract ID.
 #
 # Usage: bash deploy.sh
