@@ -164,7 +164,8 @@ impl SigningRequest {
         println!("{}", self.transaction_xdr);
     }
 
-    /// Validate the signing request
+    /// Validate the signing request.
+    #[must_use]
     pub fn validate(&self) -> Result<()> {
         if self.id.is_empty() {
             return Err(anyhow!("Request ID cannot be empty"));
@@ -180,7 +181,8 @@ impl SigningRequest {
         }
     }
 
-    /// Get QR code data for mobile wallet
+    /// Get QR code data for mobile wallet.
+    #[must_use]
     pub fn to_qr_data(&self) -> Result<String> {
         self.to_wallet_format()
     }
