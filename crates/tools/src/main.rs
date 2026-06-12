@@ -1,3 +1,8 @@
+//! OrbitChain CLI entry point.
+//!
+//! Parses sub-commands for config, network, vault, asset, signing, response,
+//! keymanager, keypair, deploy, invoke, and account operations.
+
 use anyhow::{Result, Context};
 use std::env;
 
