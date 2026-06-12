@@ -1,3 +1,8 @@
+//! Tests for `CampaignContract::claim_refund` and refund eligibility edge cases.
+//!
+//! Validates the full refund decision matrix: campaign status, milestone state,
+//! refund window boundaries, and already-claimed protection.
+
 #![cfg(test)]
 
 use soroban_sdk::testutils::Address as AddressTestUtils;
