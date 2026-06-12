@@ -65,6 +65,7 @@ pub struct CertificatePdfGenerator {
 
 impl CertificatePdfGenerator {
     /// Create a new PDF generator with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: PdfGenerationConfig::default(),
@@ -72,6 +73,7 @@ impl CertificatePdfGenerator {
     }
 
     /// Create a new PDF generator with custom configuration
+    #[must_use]
     pub fn with_config(config: PdfGenerationConfig) -> Self {
         Self { config }
     }
