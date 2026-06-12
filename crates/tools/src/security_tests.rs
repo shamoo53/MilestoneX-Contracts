@@ -1,3 +1,9 @@
+//! Security test suite for comprehensive vulnerability testing.
+//!
+//! Covers SQL injection, XSS, CSRF, authentication bypass, authorization bypass,
+//! input validation, and data sanitization. All methods are static — instantiate
+//! with `SecurityTestSuite` to run.
+
 use anyhow::{Result, Context};
 use std::collections::HashMap;
 
