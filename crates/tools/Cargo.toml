@@ -1,11 +1,11 @@
 [package]
-name = "stellaraid-tools"
+name = "orbitchain-tools"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [[bin]]
-name = "stellaraid-cli"
+name = "orbitchain-cli"
 path = "src/main.rs"
 
 [dependencies]
