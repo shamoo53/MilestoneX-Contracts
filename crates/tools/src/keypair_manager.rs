@@ -36,14 +36,16 @@ impl MasterKeypair {
         Ok(())
     }
 
-    /// Store master keypair in encrypted vault
+    /// Store master keypair in encrypted vault.
+    #[must_use]
     pub fn store_in_vault(&self, vault: &mut EncryptedVault) -> Result<()> {
         vault.store_secret_key("master_secret_key", &self.secret_key)?;
         vault.store_public_key("master_public_key", &self.public_key)?;
         Ok(())
     }
 
-    /// Load master keypair from vault
+    /// Load master keypair from vault.
+    #[must_use]
     pub fn load_from_vault(vault: &EncryptedVault) -> Result<Self> {
         let public_key = vault.retrieve_public_key("master_public_key")?;
         let secret_key = vault.retrieve_secret_key("master_secret_key")?;
