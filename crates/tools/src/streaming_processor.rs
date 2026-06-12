@@ -55,6 +55,7 @@ where
     T: Serialize + for<'de> Deserialize<'de> + Clone + std::fmt::Debug,
 {
     /// Create a new streaming processor with default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self {
             config: StreamingConfig::default(),
@@ -73,6 +74,7 @@ where
     }
 
     /// Create a new streaming processor with custom configuration
+    #[must_use]
     pub fn with_config(config: StreamingConfig) -> Self {
         Self {
             config,
