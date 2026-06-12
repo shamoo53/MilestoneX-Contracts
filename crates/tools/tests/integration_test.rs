@@ -1,3 +1,8 @@
+//! Integration test covering the signing-request → response-handler round-trip.
+//!
+//! Simulates building a signing request, serializing to JSON, simulating a wallet
+//! signing response, processing and validating the result, and persisting/loading.
+
 use std::fs;
 use std::path::Path;
 

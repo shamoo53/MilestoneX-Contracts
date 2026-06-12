@@ -51,6 +51,7 @@ pub fn find_next_pending_index(env: &Env) -> u32 {
 /// # Panics
 /// - `Error::NotInitialized` — contract not initialised.
 /// - `Error::MilestoneNotFound` — `index` ≥ `milestone_count` or missing storage.
+#[must_use]
 pub fn get_milestone_by_index(env: &Env, index: u32) -> MilestoneView {
     let campaign = get_campaign(env)
         .unwrap_or_else(|| panic_with_error!(env, Error::NotInitialized));
