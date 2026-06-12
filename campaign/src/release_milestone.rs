@@ -15,6 +15,8 @@ use crate::storage::{acquire_lock, get_campaign, get_milestone, is_frozen, relea
 /// Emits `milestone_released` event.
 /// Respects the freeze flag — panics with `ContractFrozen` if frozen.
 ///
+/// ## Security
+///
 /// Issue #242 – Reentrancy protection: acquires lock at entry, releases at exit.
 /// Issue #243 – Authorization: `creator.require_auth()`.
 /// Issue #244 – Balance verification: checks contract balance before each transfer.
@@ -23,7 +25,10 @@ use crate::storage::{acquire_lock, get_campaign, get_milestone, is_frozen, relea
 /// - `Error::NotInitialized` if campaign not initialized
 /// - `Error::MilestoneNotFound` if milestone index is out of range
 /// - `Error::InvalidMilestoneTransition` if milestone is not `Unlocked`
+/// - `Error::PreviousMilestoneNotReleased` if a prior milestone is not yet Released
+/// - `Error::MilestoneAlreadyReleased` if milestone is already in Released state
 /// - `Error::InsufficientContractBalance` if contract lacks funds for transfer
+/// - `Error::ContractFrozen` if contract is frozen
 pub fn release_milestone(env: &Env, milestone_index: u32, recipient: Address) {
     // Issue #242 – Reentrancy protection: acquire lock
     acquire_lock(env);
