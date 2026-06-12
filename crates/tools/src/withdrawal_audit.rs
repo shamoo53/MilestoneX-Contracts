@@ -34,7 +34,7 @@ pub struct WithdrawalLogEntry {
 }
 
 /// In-memory audit log for withdrawal actions.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct WithdrawalAuditLog {
     entries: Vec<WithdrawalLogEntry>,
 }
