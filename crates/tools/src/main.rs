@@ -42,8 +42,8 @@ fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        println!("StellarAid CLI - Soroban Contract Management Tool");
-        println!("Usage: stellaraid-cli <command>");
+        println!("OrbitChain CLI - Soroban Contract Management Tool");
+        println!("Usage: orbitchain-cli <command>");
         println!();
         println!("Commands:");
         println!("  config     - Manage configuration");
@@ -144,7 +144,7 @@ fn handle_deploy() -> Result<()> {
 
 fn handle_invoke(args: &[String]) -> Result<()> {
     if args.is_empty() {
-        println!("Usage: stellaraid-cli invoke <method>");
+        println!("Usage: orbitchain-cli invoke <method>");
         return Ok(());
     }
 
@@ -173,7 +173,7 @@ fn handle_vault() -> Result<()> {
 
 fn handle_toggle(args: &[String]) -> Result<()> {
     if args.is_empty() {
-        println!("Usage: stellaraid-cli toggle <testnet|mainnet>");
+        println!("Usage: orbitchain-cli toggle <testnet|mainnet>");
         return Ok(());
     }
 
@@ -184,7 +184,7 @@ fn handle_asset(args: &[String]) -> Result<()> {
     if args.is_empty() {
         println!("🪙 Asset Management Commands");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("Usage: stellaraid-cli asset <command>");
+        println!("Usage: orbitchain-cli asset <command>");
         println!();
         println!("Commands:");
         println!("  config     - Show asset configuration");
@@ -208,7 +208,7 @@ fn handle_asset(args: &[String]) -> Result<()> {
         }
         "trustline" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli asset trustline <holder_public_key> [asset_code]");
+                println!("Usage: orbitchain-cli asset trustline <holder_public_key> [asset_code]");
                 return Ok(());
             }
             
@@ -232,7 +232,7 @@ fn handle_asset(args: &[String]) -> Result<()> {
         }
         "issue" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli asset issue <recipient> <amount>");
+                println!("Usage: orbitchain-cli asset issue <recipient> <amount>");
                 return Ok(());
             }
             
@@ -256,7 +256,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
     if args.is_empty() {
         println!("🔑 Key Manager Commands");
         println!("━━━━━━━━━━━━━━━━━━━━━━");
-        println!("Usage: stellaraid-cli keymanager <command>");
+        println!("Usage: orbitchain-cli keymanager <command>");
         println!();
         println!("Commands:");
         println!("  encrypt <password> <secret_key>  - Encrypt a secret key");
@@ -271,7 +271,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
     match args[0].as_str() {
         "encrypt" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli keymanager encrypt <password> <secret_key>");
+                println!("Usage: orbitchain-cli keymanager encrypt <password> <secret_key>");
                 return Ok(());
             }
             
@@ -291,7 +291,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
         }
         "decrypt" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli keymanager decrypt <password> <encrypted_hex>");
+                println!("Usage: orbitchain-cli keymanager decrypt <password> <encrypted_hex>");
                 return Ok(());
             }
             
@@ -310,7 +310,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
         }
         "init-vault" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli keymanager init-vault <password>");
+                println!("Usage: orbitchain-cli keymanager init-vault <password>");
                 return Ok(());
             }
             
@@ -328,7 +328,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
         }
         "vault-save" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli keymanager vault-save <path>");
+                println!("Usage: orbitchain-cli keymanager vault-save <path>");
                 return Ok(());
             }
             
@@ -338,7 +338,7 @@ fn handle_keymanager(args: &[String]) -> Result<()> {
         }
         "vault-load" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli keymanager vault-load <path> <password>");
+                println!("Usage: orbitchain-cli keymanager vault-load <path> <password>");
                 return Ok(());
             }
             
@@ -361,7 +361,7 @@ fn handle_keypair(args: &[String]) -> Result<()> {
     if args.is_empty() {
         println!("🔑 Keypair Management Commands");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("Usage: stellaraid-cli keypair <command>");
+        println!("Usage: orbitchain-cli keypair <command>");
         println!();
         println!("Commands:");
         println!("  generate-master                      - Generate master keypair");
@@ -386,11 +386,11 @@ fn handle_keypair(args: &[String]) -> Result<()> {
             
             println!();
             println!("💡 Store this keypair securely:");
-            println!("   stellaraid-cli keymanager encrypt '<password>' '{}'", keypair.secret_key);
+            println!("   orbitchain-cli keymanager encrypt '<password>' '{}'", keypair.secret_key);
         }
         "generate-distribution" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli keypair generate-distribution <issuing_public_key>");
+                println!("Usage: orbitchain-cli keypair generate-distribution <issuing_public_key>");
                 return Ok(());
             }
             
@@ -414,7 +414,7 @@ fn handle_keypair(args: &[String]) -> Result<()> {
                 }
                 Err(_) => {
                     println!("❌ Master keypair not found in vault");
-                    println!("💡 Generate it with: stellaraid-cli keypair generate-master");
+                    println!("💡 Generate it with: orbitchain-cli keypair generate-master");
                 }
             }
         }
@@ -426,13 +426,13 @@ fn handle_keypair(args: &[String]) -> Result<()> {
                 }
                 Err(_) => {
                     println!("❌ Distribution account not found in vault");
-                    println!("💡 Generate it with: stellaraid-cli keypair generate-distribution <issuing_key>");
+                    println!("💡 Generate it with: orbitchain-cli keypair generate-distribution <issuing_key>");
                 }
             }
         }
         "fund" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli keypair fund <account_public_key> <amount_xlm>");
+                println!("Usage: orbitchain-cli keypair fund <account_public_key> <amount_xlm>");
                 return Ok(());
             }
             
@@ -495,7 +495,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
     if args.is_empty() {
         println!("🔐 Signing Request Commands");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("Usage: stellaraid-cli signing <command>");
+        println!("Usage: orbitchain-cli signing <command>");
         println!();
         println!("Commands:");
         println!("  build-donation     - Build donation signing request");
@@ -509,7 +509,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
     match args[0].as_str() {
         "build-donation" => {
             if args.len() < 4 {
-                println!("Usage: stellaraid-cli signing build-donation <donor_address> <campaign_id> <amount> [asset] [memo]");
+                println!("Usage: orbitchain-cli signing build-donation <donor_address> <campaign_id> <amount> [asset] [memo]");
                 return Ok(());
             }
 
@@ -545,7 +545,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
         }
         "build-campaign" => {
             if args.len() < 4 {
-                println!("Usage: stellaraid-cli signing build-campaign <creator_address> <title> <goal> <deadline_timestamp>");
+                println!("Usage: orbitchain-cli signing build-campaign <creator_address> <title> <goal> <deadline_timestamp>");
                 return Ok(());
             }
 
@@ -572,7 +572,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
         }
         "build-custom" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli signing build-custom <xdr> [description]");
+                println!("Usage: orbitchain-cli signing build-custom <xdr> [description]");
                 return Ok(());
             }
 
@@ -603,7 +603,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
         }
         "validate" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli signing validate <json_file>");
+                println!("Usage: orbitchain-cli signing validate <json_file>");
                 return Ok(());
             }
 
@@ -634,7 +634,7 @@ fn handle_signing(args: &[String]) -> Result<()> {
         }
         "export" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli signing export <json_file>");
+                println!("Usage: orbitchain-cli signing export <json_file>");
                 println!();
                 println!("Exports a signing request in wallet-compatible format");
                 return Ok(());
@@ -678,7 +678,7 @@ fn handle_response(args: &[String]) -> Result<()> {
     if args.is_empty() {
         println!("✅ Response Handler Commands");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("Usage: stellaraid-cli response <command>");
+        println!("Usage: orbitchain-cli response <command>");
         println!();
         println!("Commands:");
         println!("  process       - Process wallet response JSON");
@@ -692,7 +692,7 @@ fn handle_response(args: &[String]) -> Result<()> {
     match args[0].as_str() {
         "process" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli response process <json_response>");
+                println!("Usage: orbitchain-cli response process <json_response>");
                 return Ok(());
             }
 
@@ -712,7 +712,7 @@ fn handle_response(args: &[String]) -> Result<()> {
         }
         "validate" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli response validate <json_file>");
+                println!("Usage: orbitchain-cli response validate <json_file>");
                 return Ok(());
             }
 
@@ -746,7 +746,7 @@ fn handle_response(args: &[String]) -> Result<()> {
         }
         "save" => {
             if args.len() < 3 {
-                println!("Usage: stellaraid-cli response save <json_response> <output_file>");
+                println!("Usage: orbitchain-cli response save <json_response> <output_file>");
                 return Ok(());
             }
 
@@ -772,7 +772,7 @@ fn handle_response(args: &[String]) -> Result<()> {
         }
         "load" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli response load <json_file>");
+                println!("Usage: orbitchain-cli response load <json_file>");
                 return Ok(());
             }
 
@@ -796,7 +796,7 @@ fn handle_response(args: &[String]) -> Result<()> {
         }
         "submit" => {
             if args.len() < 2 {
-                println!("Usage: stellaraid-cli response submit <json_file>");
+                println!("Usage: orbitchain-cli response submit <json_file>");
                 return Ok(());
             }
 

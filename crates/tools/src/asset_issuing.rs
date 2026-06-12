@@ -25,7 +25,7 @@ impl AssetConfig {
             .unwrap_or_else(|_| "STAID".to_string());
         
         let name = env::var("ASSET_NAME")
-            .unwrap_or_else(|_| "StellarAid Token".to_string());
+            .unwrap_or_else(|_| "OrbitChain Token".to_string());
 
         let issuing_secret_key = env::var("SOROBAN_ISSUING_SECRET_KEY")
             .context("SOROBAN_ISSUING_SECRET_KEY is required")?;

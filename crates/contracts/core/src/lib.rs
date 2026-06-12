@@ -168,10 +168,10 @@ pub struct DashboardMetrics {
 // ── Contract ─────────────────────────────────────────────────────────────────
 
 #[contract]
-pub struct StellarAidContract;
+pub struct OrbitChainContract;
 
 #[contractimpl]
-impl StellarAidContract {
+impl OrbitChainContract {
     /// Initialize the contract with admin address
     pub fn initialize(env: Env, admin: Address) {
         admin.require_auth();
@@ -707,16 +707,16 @@ mod tests {
     #[test]
     fn test_ping() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
         assert_eq!(client.ping(), 1);
     }
 
     #[test]
     fn test_initialize() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
         let admin = Address::generate(&env);
         client.initialize(&admin);
         assert_eq!(client.get_admin(), Some(admin));
@@ -727,8 +727,8 @@ mod tests {
         let env = Env::default();
         env.mock_all_auths();
 
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
         client.initialize(&admin);
@@ -764,8 +764,8 @@ mod tests {
     fn test_validate_recipient() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
         let recipient = Address::generate(&env);
         assert!(client.validate_recipient(&recipient));
     }
@@ -775,8 +775,8 @@ mod tests {
     fn test_withdraw_and_approve() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
         client.initialize(&admin);
@@ -812,8 +812,8 @@ mod tests {
     fn test_submit_transaction() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
         client.initialize(&admin);
@@ -840,8 +840,8 @@ mod tests {
     fn test_prevent_double_withdrawal() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
         client.initialize(&admin);
@@ -865,8 +865,8 @@ mod tests {
     fn test_total_tx_count() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
 
         let admin = Address::generate(&env);
         client.initialize(&admin);
@@ -890,10 +890,10 @@ mod tests {
     // ── Analytics & reporting tests (issues #145, #146, #147, #148) ────────────────────
 
     /// Helper: bootstrap a contract with admin + N campaigns and return the IDs.
-    fn setup_with_campaigns(env: &Env, n: u32) -> (StellarAidContractClient<'_>, Address, Address, Vec<u64>) {
+    fn setup_with_campaigns(env: &Env, n: u32) -> (OrbitChainContractClient<'_>, Address, Address, Vec<u64>) {
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(env, &contract_id);
         let admin = Address::generate(env);
         client.initialize(&admin);
         let creator = Address::generate(env);
@@ -984,8 +984,8 @@ mod tests {
     fn test_campaign_report_progress_clamped() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
         let admin = Address::generate(&env);
         client.initialize(&admin);
         let creator = Address::generate(&env);
@@ -1056,8 +1056,8 @@ mod tests {
     fn test_dashboard_metrics_empty_contract() {
         let env = Env::default();
         env.mock_all_auths();
-        let contract_id = env.register_contract(None, StellarAidContract);
-        let client = StellarAidContractClient::new(&env, &contract_id);
+        let contract_id = env.register_contract(None, OrbitChainContract);
+        let client = OrbitChainContractClient::new(&env, &contract_id);
         let admin = Address::generate(&env);
         client.initialize(&admin);
 

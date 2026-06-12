@@ -24,7 +24,7 @@ impl Default for StreamingConfig {
             batch_size: 1000,
             max_memory_mb: 512,
             enable_disk_cache: false,
-            cache_dir: "/tmp/stellaraid_cache".to_string(),
+            cache_dir: "/tmp/orbitchain_cache".to_string(),
             flush_interval: 500,
         }
     }
