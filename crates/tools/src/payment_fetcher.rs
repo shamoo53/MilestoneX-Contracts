@@ -13,6 +13,7 @@ pub struct IncomingPayment {
 /// Parses a single Horizon payment record (as a flat key→value map) into an `IncomingPayment`.
 ///
 /// In production, deserialise directly from the Horizon JSON response instead.
+#[must_use]
 pub fn parse_payment(record: &HashMap<&str, &str>) -> Option<IncomingPayment> {
     Some(IncomingPayment {
         transaction_hash: record.get("transaction_hash")?.to_string(),
