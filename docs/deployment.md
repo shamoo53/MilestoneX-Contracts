@@ -22,6 +22,12 @@ make setup && make build
 stellar contract deploy   --wasm target/wasm32v1-none/release/campaign.wasm   --source $STELLAR_SECRET_KEY   --network testnet
 ```
 
+## Verify Deployment
+
+```bash
+stellar contract invoke   --id $CONTRACT_ID   --source $STELLAR_SECRET_KEY   --network testnet   -- version
+```
+
 ## Mainnet Deployment
 
 ```bash
