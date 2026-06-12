@@ -1,5 +1,6 @@
 use soroban_sdk::{Address, Env, String, Symbol};
 
+/// Emitted when a donation is received by the campaign.
 pub fn donation_received(
     env: &Env,
     donor: &Address,
@@ -12,6 +13,7 @@ pub fn donation_received(
     env.events().publish(topics, (donor, amount, asset_code, raised_total, timestamp));
 }
 
+/// Emitted when a milestone transitions from Locked to Unlocked.
 pub fn milestone_unlocked(
     env: &Env,
     milestone_index: u32,
@@ -22,6 +24,7 @@ pub fn milestone_unlocked(
     env.events().publish(topics, (milestone_index, target_amount, raised_total));
 }
 
+/// Emitted when the campaign deadline is extended by the creator.
 pub fn deadline_extended(
     env: &Env,
     creator: &Address,
@@ -34,14 +37,17 @@ pub fn deadline_extended(
     );
 }
 
+/// Emitted when the campaign is cancelled by the creator.
 pub fn campaign_cancelled(env: &Env, creator: &Address) {
     env.events().publish(("campaign", "campaign_cancelled"), creator);
 }
 
+/// Emitted when the campaign ends (deadline passed or ended early).
 pub fn campaign_ended(env: &Env) {
     env.events().publish(("campaign", "campaign_ended"), ());
 }
 
+/// Emitted when milestone funds are released to the recipient.
 pub fn milestone_released(
     env: &Env,
     milestone_index: u32,
