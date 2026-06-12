@@ -98,6 +98,7 @@ where
     }
 
     /// Process a large dataset using streaming/chunked approach
+    #[must_use]
     pub fn process_stream<F, R>(
         &mut self,
         data: &[T],
@@ -157,6 +158,7 @@ where
     }
 
     /// Process data from an iterator (true streaming)
+    #[must_use]
     pub fn process_iterator<I, F, R>(
         &mut self,
         iterator: I,

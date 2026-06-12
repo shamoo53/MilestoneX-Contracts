@@ -228,6 +228,7 @@ impl SigningRequest {
     }
 
     /// Issue #132 – Sign using the secret key stored in the SOROBAN_SECRET_KEY env var.
+    #[must_use]
     pub fn sign_from_env(&self) -> Result<ServerSignedTransaction> {
         let secret_key = env::var("SOROBAN_SECRET_KEY")
             .context("SOROBAN_SECRET_KEY not set in environment")?;
