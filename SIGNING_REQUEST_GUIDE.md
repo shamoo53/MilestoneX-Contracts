@@ -1,5 +1,7 @@
 # Signing Request & Response Handler Documentation
 
+> **Version:** 1.0 | **Last Updated:** June 2026
+
 ## Overview
 
 The OrbitChain signing request and response handler modules provide a complete workflow for building, signing, and processing blockchain transactions through wallet integration.
