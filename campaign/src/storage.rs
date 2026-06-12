@@ -27,7 +27,7 @@ pub const TEMPORARY_BUMP_THRESHOLD: u32 = 17_280;
 // ─── Internal bump helper ─────────────────────────────────────────────────────
 
 /// Bump a persistent key's TTL if it is below the threshold.
-#[must_use]
+#[inline]
 fn bump_persistent(env: &Env, key: &DataKey) {
     env.storage()
         .persistent()
