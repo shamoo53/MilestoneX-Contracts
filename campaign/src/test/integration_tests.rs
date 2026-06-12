@@ -1,3 +1,7 @@
+//! Integration tests for the full campaign lifecycle.
+//!
+//! Covers initialize → donate → goal-reached → milestone unlock → end → refund flows.
+
 #![cfg(test)]
 
 use soroban_sdk::testutils::Address as AddressTestUtils;
