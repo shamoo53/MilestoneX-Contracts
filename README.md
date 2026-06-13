@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/orbitchain/orbitchain-contracts/workflows/CI/badge.svg)](https://github.com/orbitchain/orbitchain-contracts/actions)
 
-A blockchain-based crowdfunding platform built on the **Stellar Network** for transparent, borderless, and secure fundraising.
+**OrbitChain** is an on-chain crowdfunding protocol built on the **Stellar Network** and **Soroban smart contracts**. It provides a transparent, trust-minimized platform where campaign creators can raise funds in native XLM or any Stellar-based asset (USDC, NGNT, custom tokens), and donors retain full visibility into how their contributions are deployed.
 
-OrbitChain enables project creators to raise funds in **XLM** or any Stellar-based asset (USDC, NGNT, custom tokens), while donors can contribute with full on-chain transparency.
+The protocol is governed by a set of deterministic Soroban contracts — handling campaign lifecycle management, milestone-based fund release, multi-asset donation processing, and cross-chain token bridging — complemented by a comprehensive CLI toolchain for deployment, transaction signing, wallet integration, and network diagnostics.
 
 ## � Workspace Layout
 
