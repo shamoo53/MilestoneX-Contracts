@@ -33,6 +33,7 @@ use storage::{
     storage_increment_donation_count, storage_increment_unique_donor_count,
     storage_set_total_raised,
 };
+
 use types::{
     AssetInfo, CampaignData, CampaignInitializedEvent, CampaignReport, CampaignStatus,
     CampaignStatusResponse, DashboardMetrics, DonorRecord, Error, MilestoneData, MilestoneStatus,
@@ -210,6 +211,8 @@ impl CampaignContract {
         storage_increment_asset_raised(&env, &asset_address, amount);
         increment_donor_asset_donation(&env, &donor, &asset_address, amount);
 
+        let _donor_record =
+            get_donor(&env, &donor).unwrap_or(DonorRecord::new_for(donor.clone(), asset.clone()));
         // Update donor record
         let existing_donor = get_donor(&env, &donor);
         let is_new_donor = existing_donor.is_none();
@@ -394,6 +397,9 @@ impl CampaignContract {
 
         let campaign =
             get_campaign(&env).unwrap_or_else(|| panic_with_error(&env, Error::NotInitialized));
+
+        let _donor_record =
+            get_donor(&env, &donor).unwrap_or_else(|| panic_with_error(&env, Error::NoDonorRecord));
 
         let mut donor_record =
             get_donor(&env, &donor).unwrap_or_else(|| panic_with_error(&env, Error::NoDonorRecord));
@@ -614,6 +620,17 @@ impl CampaignContract {
         let timestamp = env.ledger().timestamp();
         event::contract_unfrozen(&env, &campaign.creator, timestamp);
     }
+}
+
+/// Issue #175 – assert the current invoker is the campaign creator.
+///
+/// Reads the creator address from campaign storage and calls `require_auth()`.
+/// Panics with `Error::Unauthorized` if the campaign is not initialized;
+/// Soroban's auth framework panics if the invoker is not the creator.
+#[allow(dead_code)]
+fn require_creator(env: &Env) {
+    let campaign = get_campaign(env).unwrap_or_else(|| panic_with_error(env, Error::Unauthorized));
+    campaign.creator.require_auth();
 }
 
 /// Validates that `asset` is in the campaign's accepted list and returns the

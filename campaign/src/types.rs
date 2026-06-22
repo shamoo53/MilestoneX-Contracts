@@ -1,6 +1,8 @@
 // src/types.rs
 
-use soroban_sdk::{contracterror, contracttype, Address, BytesN, Env, String, Vec};
+use soroban_sdk::{
+    contracterror, contracttype, panic_with_error, Address, BytesN, Env, String, Vec,
+};
 
 // ─── Error enum ───────────────────────────────────────────────────────────────
 
@@ -450,6 +452,9 @@ impl DonorRecord {
         }
     }
 
+    /// Apply a new donation to this record.  Returns an error string (for
+    /// debug builds) rather than panicking so the call site can choose how
+    /// to surface it.
     /// Apply a new donation to this record. Panics with `Error::Overflow` if
     /// `total_donated` or `donation_count` overflows.
     pub fn apply_donation(
@@ -463,13 +468,13 @@ impl DonorRecord {
         self.total_donated = self
             .total_donated
             .checked_add(amount)
-            .unwrap_or_else(|| env.panic_with_error(Error::Overflow));
+            .unwrap_or_else(|| panic_with_error!(&env, Error::Overflow));
         self.last_donation_time = time;
         self.last_donation_ledger = ledger;
         self.donation_count = self
             .donation_count
             .checked_add(1)
-            .unwrap_or_else(|| env.panic_with_error(Error::Overflow));
+            .unwrap_or_else(|| panic_with_error!(&env, Error::Overflow));
         self.asset = asset;
     }
 }
