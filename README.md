@@ -4,11 +4,11 @@
 
 ## Contract Canonicalization
 
-Decision: **Option B (conservative)** — keep `campaign/` (`orbitchain-campaign`) as the canonical crowdfunding contract for all new development, audits, deployments, and integrations. The `campaign/` implementation remains the authoritative contract for milestone flows, refunds, freeze/upgrade controls, reentrancy protection, typed errors, and dashboard analytics.
+Decision: **Option B (conservative)** — keep `campaign/` (`milestonex-campaign`) as the canonical crowdfunding contract for all new development, audits, deployments, and integrations. The `campaign/` implementation remains the authoritative contract for milestone flows, refunds, freeze/upgrade controls, reentrancy protection, typed errors, and dashboard analytics.
 
-`crates/contracts/core/` (`orbitchain-core`) is retained only as a legacy compatibility/reference contract. Do not add new campaign features there; use `campaign/` for any new logic, analytics endpoints, or deployment work. Any remaining behavior worth preserving from `core` should be migrated into `campaign/` before `core` is removed in a future breaking release.
+`crates/contracts/core/` (`milestonex-core`) is retained only as a legacy compatibility/reference contract. Do not add new campaign features there; use `campaign/` for any new logic, analytics endpoints, or deployment work. Any remaining behavior worth preserving from `core` should be migrated into `campaign/` before `core` is removed in a future breaking release.
 
-Canonical campaign analytics now live on `orbitchain-campaign`: use `get_campaign_report`, `get_platform_summary`, `get_dashboard_metrics`, `get_donation_count`, `get_donor_count`, `get_release_count`, and `get_total_tx_count` for dashboard and export workflows.
+Canonical campaign analytics now live on `milestonex-campaign`: use `get_campaign_report`, `get_platform_summary`, `get_dashboard_metrics`, `get_donation_count`, `get_donor_count`, `get_release_count`, and `get_total_tx_count` for dashboard and export workflows.
 
 **OrbitChain** is an on-chain crowdfunding protocol built on the **Stellar Network** and **Soroban smart contracts**. It provides a transparent, trust-minimized platform where campaign creators can raise funds in native XLM or any Stellar-based asset (USDC, NGNT, custom tokens), and donors retain full visibility into how their contributions are deployed.
 
@@ -53,7 +53,7 @@ print either `❌ Unknown command: …` or a stubbed "not yet implemented"
 banner with an issue link. Older documentation referenced several commands
 that do not exist yet; the canonical status table lives in
 [`docs/deployment.md`](docs/deployment.md#known-limitations--cli-status) and
-is tracked in [issue #37](https://github.com/OrbitChainLabs/OrbitChain-Contracts/issues/37).
+is tracked in [issue #37](https://github.com/MillestoneX/MilestoneX-Contracts/issues/37).
 
 ### Configuration & Network
 
@@ -240,7 +240,7 @@ cargo test --workspace
 > instead. `config init`, `contract-id`, `build-donation-tx`, `submit-tx`,
 > `verify-tx`, `prepare-wallet-signing`, and `complete-wallet-signing`
 > shown in older docs are **not implemented** — see issue
-> [#37](https://github.com/OrbitChainLabs/OrbitChain-Contracts/issues/37).
+> [#37](https://github.com/MillestoneX/MilestoneX-Contracts/issues/37).
 
 ```bash
 # Inspect resolved configuration / network / vault
@@ -327,7 +327,7 @@ SOROBAN_ADMIN_KEY=GA7...
 > The in-CLI `deploy` command is a stub today. Use the build-in Makefile
 > target (or `scripts/deploy.sh`) which is wired into `stellar contract deploy`
 > for real network output. Tracking: issue
-> [#37](https://github.com/OrbitChainLabs/OrbitChain-Contracts/issues/37).
+> [#37](https://github.com/MillestoneX/MilestoneX-Contracts/issues/37).
 
 ```bash
 # Deploy via the Makefile wrapper (uses scripts/deploy.sh + stellar-cli)
