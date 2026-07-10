@@ -367,5 +367,5 @@ mod tests {
     }
 
     // Reference to issue #32 for context.
-    // See: https://github.com/your-repo/MilestoneX-Contracts/issues/32
+    // See: https://github.com/MillestoneX/MilestoneX-Contracts/issues/32
 }
