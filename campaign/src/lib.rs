@@ -125,7 +125,15 @@ impl CampaignContract {
 
         set_campaign(&env, &campaign);
 
-        #[allow(clippy::needless_borrow)] // soroban_sdk::Vec::iter() yields owned MilestoneData by-value, not by reference; rebinding to `&milestone` invokes the auto-deref coercion once. The double-`&` is required, not needless from rustc's per-call-site perspective.
+        // storage::set_milestone takes &MilestoneData. Do NOT simplify the
+// iterate loop below by dropping the inner & (i.e. do not write
+// `set_milestone(&env, index as u32, milestone)`); that produced an
+// E0308 type mismatch on commit 8d1fe7f in a soroban_sdk::Vec::iter()
+// iteration context. The #[allow(clippy::needless_borrow)] below is
+// kept defensively regardless of whether iter() yields owned values
+// (in which case the lint does not fire and the allow is a no-op) or
+// references (in which case the lint does fire and the allow is needed).
+#[allow(clippy::needless_borrow)] // original comment rewritten per code review
         for (index, milestone) in milestones.iter().enumerate() {
             set_milestone(&env, index as u32, &milestone);
         }
