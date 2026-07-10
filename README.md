@@ -47,7 +47,7 @@ milestonex-contract/
 
 ## 🛠️ Implemented CLI Commands
 
-The `orbitchain-cli` binary (in `crates/tools`) ships with a focused set of
+The `milestonex-cli` binary (in `crates/tools`) ships with a focused set of
 sub-commands today. Anything **not** listed below is unimplemented and will
 print either `❌ Unknown command: …` or a stubbed "not yet implemented"
 banner with an issue link. Older documentation referenced several commands
@@ -98,23 +98,23 @@ is tracked in [issue #37](https://github.com/MillestoneX/MilestoneX-Contracts/is
 
 ```bash
 # Inspect active configuration and network
-orbitchain-cli config
-orbitchain-cli network
-orbitchain-cli toggle testnet
+milestonex-cli config
+milestonex-cli network
+milestonex-cli toggle testnet
 
 # Issue a custom asset and establish trustline
-orbitchain-cli asset generate
-orbitchain-cli asset trustline GABJ2... USDC
-orbitchain-cli asset issue GABJ2... 100
+milestonex-cli asset generate
+milestonex-cli asset trustline GABJ2... USDC
+milestonex-cli asset issue GABJ2... 100
 
 # Build a donation signing request for a donor
-orbitchain-cli signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
+milestonex-cli signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
 
 # Process the wallet's signed response
-orbitchain-cli response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
+milestonex-cli response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
 ```
 
-For the full command list, run `orbitchain-cli` with no arguments.
+For the full command list, run `milestonex-cli` with no arguments.
 
 ## 🛠️ Development Setup
 
@@ -412,7 +412,7 @@ stellar contract invoke \
 ### Troubleshooting
 
 - **"WASM file not found"**: Run `make build-wasm` to build the contracts first.
-- **"Unknown command" or "coming soon"**: You ran an `orbitchain-cli` command
+- **"Unknown command" or "coming soon"**: You ran an `milestonex-cli` command
   that is still a stub (`deploy`, `invoke`, `account`). Run
   `cargo run -p orbitchain-tools` with no arguments to see which commands are
   actually implemented, and follow
@@ -447,7 +447,7 @@ stellar contract invoke \
 
 ## 🏗️ Architecture Overview
 
-OrbitChain Blockchain Layer is built with:
+MilestoneX Blockchain Layer is built with:
 
 - Stellar Testnet / Mainnet support
 - Donation verification
@@ -456,7 +456,7 @@ OrbitChain Blockchain Layer is built with:
 
 ## 💰 Fee Estimation System
 
-OrbitChain includes a comprehensive **fee estimation service** that provides accurate transaction fee calculations, surge pricing detection, and multi-currency conversion.
+MilestoneX includes a comprehensive **fee estimation service** that provides accurate transaction fee calculations, surge pricing detection, and multi-currency conversion.
 
 ### Features
 
