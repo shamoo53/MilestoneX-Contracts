@@ -157,7 +157,7 @@ For the full command list, run `milestonex-cli` with no arguments.
    make build
 
    # Or using cargo directly
-   cargo build -p orbitchain-campaign --target wasm32v1-none
+   cargo build -p milestonex-campaign --target wasm32v1-none
    ```
 
 ### Prerequisites
@@ -211,10 +211,10 @@ make help
 
 ```bash
 # Build the canonical campaign contract for WASM
-cargo build -p orbitchain-campaign --target wasm32v1-none --release
+cargo build -p milestonex-campaign --target wasm32v1-none --release
 
 # Build the CLI tools
-cargo build -p orbitchain-tools
+cargo build -p milestonex-tools
 
 # Build entire workspace
 cargo build --workspace
@@ -224,7 +224,7 @@ cargo build --workspace
 
 ```bash
 # Run canonical campaign contract tests
-cargo test -p orbitchain-campaign
+cargo test -p milestonex-campaign
 
 # Run all tests
 cargo test --workspace
@@ -244,28 +244,28 @@ cargo test --workspace
 
 ```bash
 # Inspect resolved configuration / network / vault
-cargo run -p orbitchain-tools -- config
-cargo run -p orbitchain-tools -- network
-cargo run -p orbitchain-tools -- vault
-cargo run -p orbitchain-tools -- toggle testnet
+cargo run -p milestonex-tools -- config
+cargo run -p milestonex-tools -- network
+cargo run -p milestonex-tools -- vault
+cargo run -p milestonex-tools -- toggle testnet
 
 # Issue assets via the asset namespace
-cargo run -p orbitchain-tools -- asset config
-cargo run -p orbitchain-tools -- asset generate
-cargo run -p orbitchain-tools -- asset trustline GABJ2... USDC
-cargo run -p orbitchain-tools -- asset issue GABJ2... 100
+cargo run -p milestonex-tools -- asset config
+cargo run -p milestonex-tools -- asset generate
+cargo run -p milestonex-tools -- asset trustline GABJ2... USDC
+cargo run -p milestonex-tools -- asset issue GABJ2... 100
 
 # Encrypted vault operations
-cargo run -p orbitchain-tools -- keymanager init-vault "$VAULT_MASTER_PASSWORD"
-cargo run -p orbitchain-tools -- keymanager vault-status
+cargo run -p milestonex-tools -- keymanager init-vault "$VAULT_MASTER_PASSWORD"
+cargo run -p milestonex-tools -- keymanager vault-status
 
 # Keypair lifecycle (the entry point that replaced `account create|fund`)
-cargo run -p orbitchain-tools -- keypair generate-master
-cargo run -p orbitchain-tools -- keypair fund GABJ2... 10
+cargo run -p milestonex-tools -- keypair generate-master
+cargo run -p milestonex-tools -- keypair fund GABJ2... 10
 
 # Wallet signing + response
-cargo run -p orbitchain-tools -- signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
-cargo run -p orbitchain-tools -- response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
+cargo run -p milestonex-tools -- signing build-donation GBJCHU... 1 5000000 XLM "Supporting education"
+cargo run -p milestonex-tools -- response process '{"requestId":"req_123","xdr":"AAAA...","signer":"GBJCHU...","signedAt":1234567890}'
 ```
 
 ## 🚀 Quick Start: Deploy Your First Contract
@@ -385,7 +385,7 @@ cat .orbitchain_contract_id
 cat deployments/testnet.json
 
 # View active network configuration
-cargo run -p orbitchain-tools -- network
+cargo run -p milestonex-tools -- network
 ```
 
 ### Using Sandbox (Local Development)
@@ -414,12 +414,12 @@ stellar contract invoke \
 - **"WASM file not found"**: Run `make build-wasm` to build the contracts first.
 - **"Unknown command" or "coming soon"**: You ran an `milestonex-cli` command
   that is still a stub (`deploy`, `invoke`, `account`). Run
-  `cargo run -p orbitchain-tools` with no arguments to see which commands are
+  `cargo run -p milestonex-tools` with no arguments to see which commands are
   actually implemented, and follow
   [`docs/deployment.md`](docs/deployment.md#known-limitations--cli-status).
 - **"No contract ID found"**: Run `make deploy-testnet` first — the
   `scripts/deploy.sh` wrapper writes the ID to `.orbitchain_contract_id`.
-- **"Configuration error"**: Run `cargo run -p orbitchain-tools -- config` to
+- **"Configuration error"**: Run `cargo run -p milestonex-tools -- config` to
   inspect resolved environment values.
 - **"soroban: command not found"**: Install with `cargo install --locked stellar-cli --features opt`.
 
@@ -605,7 +605,7 @@ Environment variable override behavior
 Verify the resolved network with the included CLI tool:
 
 ```bash
-cargo run -p orbitchain-tools -- network
+cargo run -p milestonex-tools -- network
 ```
 
 See `.env.example` for a safe example of environment variables you can copy to `.env`.
