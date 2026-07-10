@@ -1,9 +1,9 @@
 [package]
-name = "orbitchain-core"
+name = "milestonex-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description = "Legacy OrbitChain campaign reference contract; canonical implementation lives in orbitchain-campaign"
+description = "Legacy MilestoneX campaign reference contract; canonical implementation lives in milestonex-campaign"
 
 [lib]
 crate-type = ["cdylib", "lib"]
