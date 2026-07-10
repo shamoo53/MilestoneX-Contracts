@@ -1,4 +1,4 @@
-//! OrbitChain campaign smart contract.
+//! MilestoneX campaign smart contract.
 //!
 //! This is the canonical campaign implementation for the repository: it owns
 //! the production campaign lifecycle, milestone handling, refunds,
