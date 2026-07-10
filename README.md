@@ -10,7 +10,7 @@ Decision: **Option B (conservative)** — keep `campaign/` (`milestonex-campaign
 
 Canonical campaign analytics now live on `milestonex-campaign`: use `get_campaign_report`, `get_platform_summary`, `get_dashboard_metrics`, `get_donation_count`, `get_donor_count`, `get_release_count`, and `get_total_tx_count` for dashboard and export workflows.
 
-**OrbitChain** is an on-chain crowdfunding protocol built on the **Stellar Network** and **Soroban smart contracts**. It provides a transparent, trust-minimized platform where campaign creators can raise funds in native XLM or any Stellar-based asset (USDC, NGNT, custom tokens), and donors retain full visibility into how their contributions are deployed.
+**MilestoneX** is an on-chain crowdfunding protocol built on the **Stellar Network** and **Soroban smart contracts**. It provides a transparent, trust-minimized platform where campaign creators can raise funds in native XLM or any Stellar-based asset (USDC, NGNT, custom tokens), and donors retain full visibility into how their contributions are deployed.
 
 The protocol is governed by a set of deterministic Soroban contracts — handling campaign lifecycle management, milestone-based fund release, multi-asset donation processing, and cross-chain token bridging — complemented by a comprehensive CLI toolchain for deployment, transaction signing, wallet integration, and network diagnostics.
 
@@ -19,7 +19,7 @@ The protocol is governed by a set of deterministic Soroban contracts — handlin
 This project uses a Rust Cargo workspace with the following structure:
 
 ```
-orbitChain-contract/
+milestonex-contract/
 |-- campaign/                  # Canonical campaign contract
 |   |-- Cargo.toml
 |   `-- src/
@@ -41,9 +41,9 @@ orbitChain-contract/
 
 ### Crates Overview
 
-- **`orbitchain-campaign`**: Canonical Soroban crowdfunding contract for milestones, multi-asset donations, refunds, lifecycle controls, and analytics
-- **`orbitchain-core`**: Legacy compatibility/reference contract; do not use for new campaign features
-- **`orbitchain-tools`**: Advanced CLI utilities for contract deployment, configuration, transaction management, and debugging
+- **`milestonex-campaign`**: Canonical Soroban crowdfunding contract for milestones, multi-asset donations, refunds, lifecycle controls, and analytics
+- **`milestonex-core`**: Legacy compatibility/reference contract; do not use for new campaign features
+- **`milestonex-tools`**: Advanced CLI utilities for contract deployment, configuration, transaction management, and debugging
 
 ## 🛠️ Implemented CLI Commands
 
