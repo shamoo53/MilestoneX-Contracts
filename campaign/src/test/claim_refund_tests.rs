@@ -5,11 +5,9 @@
 
 #![cfg(test)]
 
-use core::ops::Add;
-
 use soroban_sdk::testutils::{Address as AddressTestUtils, Ledger};
 use soroban_sdk::token::{StellarAssetClient, TokenClient};
-use soroban_sdk::{log, vec, Address, Env, Vec};
+use soroban_sdk::{vec, Address, Env, Vec};
 
 use super::with_contract;
 use crate::storage::{set_campaign, set_donor, set_milestone};
@@ -429,7 +427,7 @@ fn test_claim_refund_ended_with_released_milestone_eligibility() {
     });
 }
 
-fn setup<'a>() -> (Env, CampaignContractClient<'a>, Address) {
+fn setup() -> (Env, CampaignContractClient<'_>, Address) {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -464,10 +462,17 @@ fn create_test_milestone_data(
     vec![&env, milestone]
 }
 
-fn token_asset<'a>(env: &Env) -> (StellarAssetClient<'a>, Address, TokenClient) {
+fn token_asset(env: &Env) -> (StellarAssetClient<'_>, Address, TokenClient<'_>) {
+    // Use the v1 `register_stellar_asset_contract` API. The v2 variant
+    // (`register_stellar_asset_contract_v2`) goes through
+    // `soroban-env-host 26.1.3`'s testutils, which calls
+    // `SigningKey::generate(chacha)` and requires the rand_core 0.9
+    // `CryptoRng` surface that ed25519-dalek 3.0+ provides but
+    // 2.2 does not. The v1 API does not invoke that path, so it is
+    // compatible with whatever ed25519-dalek 2.x version Cargo
+    // resolves for the workspace.
     let admin = Address::generate(&env);
-    let sac = env.register_stellar_asset_contract_v2(admin.clone());
-    let token_address = sac.address();
+    let token_address = env.register_stellar_asset_contract(admin);
     let token = TokenClient::new(&env, &token_address);
     let token_sac = StellarAssetClient::new(&env, &token_address);
 
