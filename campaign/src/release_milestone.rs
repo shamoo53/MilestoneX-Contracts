@@ -1,8 +1,12 @@
 use crate::event;
+#[cfg(feature = "diag")]
+use crate::storage::storage_increment_diagnostic_counter;
 use crate::storage::{
     acquire_lock, get_campaign, get_milestone, is_frozen, release_lock, set_milestone,
     storage_increment_release_count,
 };
+#[cfg(feature = "diag")]
+use crate::types::CampaignMetrics;
 use crate::types::{Error, MilestoneStatus};
 use soroban_sdk::{panic_with_error, token, Address, Env};
 
@@ -141,6 +145,10 @@ pub fn release_milestone(env: &Env, milestone_index: u32, recipient: Address) {
     milestone.released_to = Some(recipient);
     set_milestone(env, milestone_index, &milestone);
     storage_increment_release_count(env);
+    #[cfg(feature = "diag")]
+    storage_increment_diagnostic_counter(env, |m: &mut CampaignMetrics| {
+        m.milestones_released_total += 1;
+    });
 
     // Issue #242 – Release reentrancy lock
     release_lock(env);

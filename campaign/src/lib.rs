@@ -25,6 +25,8 @@ pub mod types;
 pub mod views;
 
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, String, Vec};
+#[cfg(feature = "diag")]
+use storage::storage_increment_diagnostic_counter;
 use storage::{
     acquire_lock, get_campaign, get_donor, get_donor_asset_donation, get_milestone,
     increment_donor_asset_donation, is_frozen, release_lock, set_campaign, set_donor, set_frozen,
@@ -35,9 +37,9 @@ use storage::{
 };
 
 use types::{
-    AssetInfo, CampaignData, CampaignInitializedEvent, CampaignReport, CampaignStatus,
-    CampaignStatusResponse, DashboardMetrics, DonorRecord, Error, MilestoneData, MilestoneStatus,
-    PlatformSummary, StellarAsset,
+    AssetInfo, CampaignData, CampaignInitializedEvent, CampaignMetrics, CampaignReport,
+    CampaignStatus, CampaignStatusResponse, DashboardMetrics, DonorRecord, Error, MilestoneData,
+    MilestoneStatus, PlatformSummary, StellarAsset,
 };
 
 pub const VERSION: u32 = 1;
@@ -167,13 +169,15 @@ impl CampaignContract {
         // Issue #242 – Reentrancy protection: acquire lock
         acquire_lock(&env);
 
-        // Issue #243 – Authorization check
-        donor.require_auth();
-
         // Freeze check — reject all mutating operations while frozen
+        // Must precede require_auth() so the freeze invariant short-circuits
+        // before any auth work is consumed.
         if is_frozen(&env) {
             panic_with_error(&env, Error::ContractFrozen);
         }
+
+        // Issue #243 – Authorization check
+        donor.require_auth();
 
         let mut campaign: CampaignData =
             get_campaign(&env).unwrap_or_else(|| panic_with_error(&env, Error::NotInitialized));
@@ -269,6 +273,12 @@ impl CampaignContract {
             env.ledger().timestamp(),
         );
 
+        // Track diagnostic counter (no-op when `diag` feature is disabled)
+        #[cfg(feature = "diag")]
+        storage_increment_diagnostic_counter(&env, |m: &mut CampaignMetrics| {
+            m.donations_total += 1;
+        });
+
         // Issue #242 – Release reentrancy lock
         release_lock(&env);
     }
@@ -323,6 +333,38 @@ impl CampaignContract {
             total_releases,
             total_transactions,
         }
+    }
+
+    /// Emit current diagnostics as a `diagnostics` event.
+    ///
+    /// When the `diag` feature is disabled the event is not published
+    /// (the function body is empty). No auth required (view-like call).
+    pub fn emit_diagnostics(env: Env) {
+        #[cfg(feature = "diag")]
+        {
+            let metrics = crate::storage::storage_get_diagnostic_metrics(&env);
+            event::diagnostics_emit(&env, &metrics);
+            let mut metrics = metrics;
+            metrics.last_diagnostics_ledger = env.ledger().sequence();
+            crate::storage::storage_set_diagnostic_metrics(&env, &metrics);
+        }
+        #[cfg(not(feature = "diag"))]
+        let _ = env;
+    }
+
+    /// Returns diagnostic counters for the campaign contract.
+    ///
+    /// When the `diag` feature is disabled (default), returns all zeros.
+    /// When `diag` is enabled, returns live counters tracked in storage.
+    /// No auth required (read-only view).
+    pub fn metrics_view(env: Env) -> CampaignMetrics {
+        #[cfg(feature = "diag")]
+        {
+            return crate::storage::storage_get_diagnostic_metrics(&env);
+        }
+        #[cfg(not(feature = "diag"))]
+        let _ = env;
+        CampaignMetrics::default()
     }
 
     /// Returns compact metrics for campaign dashboards.
@@ -394,13 +436,15 @@ impl CampaignContract {
         // Issue #242 – Reentrancy protection: acquire lock
         acquire_lock(&env);
 
-        // Issue #243 – Authorization check
-        donor.require_auth();
-
         // Freeze check — reject all mutating operations while frozen
+        // Must precede require_auth() so the freeze invariant short-circuits
+        // before any auth work is consumed.
         if is_frozen(&env) {
             panic_with_error(&env, Error::ContractFrozen);
         }
+
+        // Issue #243 – Authorization check
+        donor.require_auth();
 
         let campaign =
             get_campaign(&env).unwrap_or_else(|| panic_with_error(&env, Error::NotInitialized));
@@ -479,6 +523,12 @@ impl CampaignContract {
                     (&donor, donor_record.total_donated),
                 );
 
+                // Track diagnostic counter (no-op when `diag` feature is disabled)
+                #[cfg(feature = "diag")]
+                storage_increment_diagnostic_counter(&env, |m: &mut CampaignMetrics| {
+                    m.refunds_total += 1;
+                });
+
                 // Issue #242 – Release reentrancy lock
                 release_lock(&env);
             }
@@ -524,6 +574,13 @@ impl CampaignContract {
     /// Issue #243 – Authorization: `creator.require_auth()`.
     /// Issue #244 – Balance verification: checks contract balance before each transfer.
     pub fn release_milestone(env: Env, milestone_index: u32, recipient: Address) {
+        // Freeze check — reject all mutating operations while frozen.
+        // Must precede require_auth() so the freeze invariant short-circuits
+        // before any auth work is consumed.
+        if is_frozen(&env) {
+            panic_with_error(&env, Error::ContractFrozen);
+        }
+
         // Issue #243 – Authorization: hoisted here so mock_all_auths() in tests
         // can intercept require_auth() within the contract invocation frame.
         let campaign =
@@ -548,6 +605,13 @@ impl CampaignContract {
     /// Issue #243 – Authorization: `creator.require_auth()`.
     /// Issue #244 – Balance verification: checks contract balance before each transfer.
     pub fn release_milestone_multi_asset(env: Env, milestone_index: u32, recipient: Address) {
+        // Freeze check — reject all mutating operations while frozen.
+        // Must precede require_auth() so the freeze invariant short-circuits
+        // before any auth work is consumed.
+        if is_frozen(&env) {
+            panic_with_error(&env, Error::ContractFrozen);
+        }
+
         // Issue #243 – Authorization: hoisted here so mock_all_auths() in tests
         // can intercept require_auth() within the contract invocation frame.
         let campaign =
@@ -584,15 +648,17 @@ impl CampaignContract {
     /// - `Error::NotInitialized` if campaign not yet initialized
     /// - `Error::ContractFrozen` if the contract is currently frozen
     pub fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+        // Freeze check — reject all mutating operations while frozen.
+        // Must precede require_auth() so the freeze invariant short-circuits
+        // before any auth work is consumed.
+        if is_frozen(&env) {
+            panic_with_error(&env, Error::ContractFrozen);
+        }
+
         let campaign =
             get_campaign(&env).unwrap_or_else(|| panic_with_error(&env, Error::NotInitialized));
 
         campaign.creator.require_auth();
-
-        // Freeze check — consistent with donate(), claim_refund(), and release_milestone()
-        if is_frozen(&env) {
-            panic_with_error(&env, Error::ContractFrozen);
-        }
 
         // Actually deploy the new WASM hash to the contract
         env.deployer()
@@ -829,13 +895,32 @@ pub fn validate_milestone_transition(
 
 #[cfg(test)]
 mod test {
+    pub mod budget_invariant_tests;
     pub mod claim_refund_tests;
+    pub mod diagnostics_tests;
     pub mod get_campaign_status_tests;
     pub mod integration_tests;
     pub mod invariant_tests;
     pub mod negative_path_tests;
     pub mod refund_eligibility_tests;
     pub mod release_milestone_tests;
+
+    use soroban_sdk::{testutils::Address as AddressTestUtils, Address, BytesN, Env, String, Vec};
+
+    use crate::storage::get_campaign;
+    use crate::types::{CampaignData, MilestoneData, MilestoneStatus, StellarAsset};
+
+    /// Pre-configured campaign environment returned by `with_campaign`.
+    ///
+    /// The env already has `mock_all_auths()` applied and the campaign
+    /// contract is registered and initialized. Callers can invoke contract
+    /// methods via `CampaignContract::method(fixture.env.clone(), ...)`.
+    pub struct CampaignFixture {
+        pub env: Env,
+        pub creator: Address,
+        pub contract_id: Address,
+        pub campaign: CampaignData,
+    }
 
     /// Shared helper: register the contract and run the body inside
     /// `env.as_contract()` so storage, ledger, and auth work correctly.
@@ -846,6 +931,119 @@ mod test {
     {
         let contract_id = env.register_contract(None, crate::CampaignContract);
         env.as_contract(&contract_id, f)
+    }
+
+    /// Runs `f` inside the contract context and asserts that the Soroban
+    /// resource budget (CPU instructions and memory) stays below the given
+    /// thresholds.
+    ///
+    /// The budget is reset to unlimited before `f` runs, so the measured
+    /// values reflect the true cost of the operation rather than the default
+    /// test budget.
+    ///
+    /// # Panics
+    /// Panics with a descriptive message containing `label` if either
+    /// `cpu_instruction_cost()` ≥ `cpu_max` or `memory_bytes_cost()` ≥ `mem_max`.
+    pub(crate) fn assert_budget_under(
+        env: &soroban_sdk::Env,
+        label: &str,
+        cpu_max: u64,
+        mem_max: u64,
+        f: impl FnOnce(),
+    ) {
+        let mut budget = env.cost_estimate().budget();
+        budget.reset_unlimited();
+        f();
+        let cpu = budget.cpu_instruction_cost();
+        let mem = budget.memory_bytes_cost();
+        assert!(
+            cpu < cpu_max,
+            "Budget regression (CPU): {} used {} cpu instructions, expected < {}",
+            label,
+            cpu,
+            cpu_max,
+        );
+        assert!(
+            mem < mem_max,
+            "Budget regression (Memory): {} used {} memory bytes, expected < {}",
+            label,
+            mem,
+            mem_max,
+        );
+    }
+
+    /// Set up an env with a fully initialized campaign contract.
+    ///
+    /// `prefix` is a human-readable label (e.g. `"donation_flow"`) for
+    /// documentation and future parallel-test scoping; it does not affect
+    /// storage isolation (each `Env` is independent).
+    ///
+    /// The returned `CampaignFixture` contains the env, creator address,
+    /// contract ID, and the initial campaign state.
+    ///
+    /// ## Ordering guidance
+    ///
+    /// 1. Call `with_campaign("my_test_name")` to get a fixture.
+    /// 2. `env.mock_all_auths()` is already called — for tests that need
+    ///    real auth, call `env.mock_all_auths_reset()` first.
+    /// 3. Invoke contract methods via `CampaignContract::method(...)`.
+    /// 4. Assert storage state via `get_campaign`, `get_milestone`, etc.
+    ///
+    /// ## Example
+    ///
+    /// ```ignore
+    /// let fx = with_campaign("test_donate");
+    /// CampaignContract::donate(fx.env.clone(), fx.creator, 500, AssetInfo::Native);
+    /// ```
+    pub fn with_campaign(prefix: &str) -> CampaignFixture {
+        let _ = prefix; // reserved for future parallel-test scoping
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let creator = Address::generate(&env);
+        let goal_amount: i128 = 1000;
+
+        let mut assets: Vec<StellarAsset> = Vec::new(&env);
+        assets.push_back(StellarAsset {
+            asset_code: String::from_str(&env, "XLM"),
+            issuer: Some(Address::generate(&env)),
+        });
+
+        let mut milestones: Vec<MilestoneData> = Vec::new(&env);
+        milestones.push_back(MilestoneData {
+            index: 0,
+            target_amount: goal_amount,
+            released_amount: 0,
+            description_hash: BytesN::from_array(&env, &[1u8; 32]),
+            status: MilestoneStatus::Locked,
+            released_at: None,
+            released_at_ledger: None,
+            release_tx: None,
+            released_to: None,
+        });
+
+        let contract_id = env.register_contract(None, crate::CampaignContract);
+
+        let campaign = env.as_contract(&contract_id, || {
+            crate::CampaignContract::initialize(
+                env.clone(),
+                creator.clone(),
+                goal_amount,
+                env.ledger().timestamp() + 86400,
+                assets,
+                milestones,
+                0,
+            )
+            .unwrap();
+            get_campaign(&env).expect("campaign should be stored after initialize")
+        });
+
+        CampaignFixture {
+            env,
+            creator,
+            contract_id,
+            campaign,
+        }
     }
 }
 
