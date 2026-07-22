@@ -112,8 +112,6 @@ pub enum Error {
     // ── Upgrade / freeze ─────────────────────────────────────────────────── 8x
     /// Contract is frozen; all mutating operations are blocked.
     ContractFrozen = 80,
-    /// Invalid page or page size for paginated milestone retrieval.
-    InvalidPage = 84,
 
     /// Campaign accepts multiple assets; use `release_milestone_multi_asset` instead.
     UseMultiAssetRelease = 82,
@@ -172,7 +170,6 @@ mod error_code_tests {
             Error::ReentrantCall as u32,
             Error::InvalidAmount as u32,
             Error::ContractFrozen as u32,
-            Error::InvalidPage as u32,
             Error::UseMultiAssetRelease as u32,
             Error::InvalidPage as u32,
         ];
