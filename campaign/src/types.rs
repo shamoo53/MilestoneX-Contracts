@@ -250,8 +250,7 @@ mod error_code_tests {
             .map(|(variant, code)| alloc::format!("{:?} -> {}", variant, code))
             .collect::<alloc::vec::Vec<_>>()
             .join("\n");
-        const EXPECTED: &str =
-"AlreadyInitialized -> 1
+        const EXPECTED: &str = "AlreadyInitialized -> 1
 NotInitialized -> 2
 Unauthorized -> 3
 CampaignEnded -> 4
